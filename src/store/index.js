@@ -2,6 +2,7 @@ import { createStore } from "vuex";
 
 export default createStore({
   state: {
+    globalStatus: "测试状态",
     clientArr: window.clientArr,
     selectedClientId: "",
     cmdResult: window.cmdResult,
@@ -22,6 +23,9 @@ export default createStore({
     },
   },
   getters: {
+    status(state) {
+      return state.globalStatus;
+    },
     getSelectedClientId(state) {
       return state.selectedClientId;
     },
@@ -34,7 +38,10 @@ export default createStore({
   },
   mutations: {
     clearResult(state) {
-      this.state.cmdResult.data = "";
+      state.cmdResult.data = "";
+    },
+    setGlobalStatus(state, status) {
+      state.globalStatus = status;
     },
   },
   actions: {},

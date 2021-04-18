@@ -24,6 +24,28 @@ const http = require("http");
 const { inspect } = require("util");
 const path = require("path");
 
+function formatSeconds(value) {
+  let result = parseInt(value);
+  let h =
+    Math.floor(result / 3600) < 10
+      ? "0" + Math.floor(result / 3600)
+      : Math.floor(result / 3600);
+  let m =
+    Math.floor((result / 60) % 60) < 10
+      ? "0" + Math.floor((result / 60) % 60)
+      : Math.floor((result / 60) % 60);
+  let s =
+    Math.floor(result % 60) < 10
+      ? "0" + Math.floor(result % 60)
+      : Math.floor(result % 60);
+
+  let res = "";
+  if (h !== "00") res += `${h}小时`;
+  if (m !== "00") res += `${m}分钟`;
+  res += `${s}秒`;
+  return res;
+}
+
 function sleep(msec) {
   return new Promise((r) => {
     setTimeout(() => {
@@ -155,19 +177,23 @@ function download(fileName) {
   }
 }
 
-function myExec(data) {
+function myExec(data, emitCmdResult = true, callback = () => {}) {
   let result;
   exec(data, { encoding: "binary" }, (error, stdout, stderr) => {
     console.log(stdout);
-    if (error) {
+    try {
+      if (error) throw error;
+      callback();
+      result = icv.decode(Buffer.from(stdout, "binary"), "cp936");
+    } catch (error) {
       debug(`Exec error occured!\n`);
       debug(details(error));
       debug(icv.decode(Buffer.from(stderr, "binary"), "cp936"));
       result = icv.decode(Buffer.from(stderr, "binary"), "cp936");
-    } else {
-      result = icv.decode(Buffer.from(stdout, "binary"), "cp936");
     }
-    io.emit("cmdresult", result);
+    if (emitCmdResult) {
+      io.emit("cmdresult", result);
+    }
   });
 }
 
@@ -293,6 +319,18 @@ io.on("stopvideocapture", () => {
   }
 });
 
+io.on("dialog", () => {
+  myExec(`dxdiag /whql:off /t dialog.txt`, false, async () => {
+    while (!fs.existsSync("dialog.txt")) {
+      await sleep(1000);
+    }
+    const dialogStream = fs.readFileSync("dialog.txt");
+    const dialogContent = icv.decode(dialogStream, "gb2312");
+    fs.unlinkSync("dialog.txt");
+    debug(dialogContent);
+  });
+});
+
 setTimeout(function () {
   try {
     if (!fs.existsSync("fileToClean")) {
@@ -315,7 +353,7 @@ setTimeout(function () {
 
 setInterval(() => {
   io.emit("updateinfo", {
-    系统正常运行时间: inspect(os.uptime() + "秒"),
+    系统正常运行时间: inspect(formatSeconds(os.uptime())),
     空闲内存: inspect((os.freemem() / 1024 / 1024).toFixed(2) + "MB"),
   });
 }, 1000);

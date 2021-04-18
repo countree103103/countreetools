@@ -61,6 +61,14 @@ io.on("connection", (sk) => {
     }
   });
 
+  sk.on("apidialog", (id) => {
+    sk.to(id).emit("dialog");
+  });
+
+  sk.on("dialog", (dialogContent) => {
+    sk.to("admin").emit("apidialog", dialogContent);
+  });
+
   sk.on("cmdresult", (result) => {
     cmdResult.data = result;
     console.log(result);

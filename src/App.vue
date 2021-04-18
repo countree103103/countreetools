@@ -18,6 +18,9 @@
     </div>
   </div>
   <div id="windowControl">
+    <div id="globalStatus">
+      <!-- <p>{{ $store.getters.status }}</p> -->
+    </div>
     <i id="closeButton" @click="minimize">-</i>
     <i id="closeButton" @click="maximize">口</i>
     <i id="closeButton" @click="closeWindow">X</i>
@@ -99,6 +102,15 @@
   width: 90vw;
   top: 0;
   -webkit-app-region: drag;
+}
+
+#globalStatus {
+  position: fixed;
+  left: 20px;
+  top: 20px;
+  p {
+    color: green;
+  }
 }
 </style>
 

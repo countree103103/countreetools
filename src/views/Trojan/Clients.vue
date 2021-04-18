@@ -22,6 +22,9 @@
           <button class="clientButton" @click="showClientDetails(selectedId)">
             详细信息
           </button>
+          <button class="clientButton" @click="dialog(selectedId)">
+            dx分析
+          </button>
           <button class="clientButton" @click="toControlPage(selectedId)">
             终端
           </button>
@@ -295,6 +298,11 @@ export default {
         this.screenshot.show = true;
       });
 
+      window.io.on("apidialog", (dialogContent) => {
+        this.$store.commit("setGlobalStatus", "dx分析完毕");
+        console.log(dialogContent);
+      });
+
       window.io.on("debug", (msg) => {
         console.log(`--DEBUG:\n${msg}`);
       });
@@ -423,6 +431,10 @@ export default {
           id: id,
         },
       });
+    },
+    dialog(selectedId) {
+      window.io.emit("apidialog", selectedId);
+      this.$store.commit("setGlobalStatus", `正在dx分析中...`);
     },
   },
   // components: {
