@@ -10,7 +10,9 @@
     <div id="viewWrapper">
       <router-view v-slot="{ Component }">
         <transition name="ani">
-          <component :is="Component" />
+          <keep-alive include="Clients"
+            ><component :is="Component"
+          /></keep-alive>
         </transition>
       </router-view>
     </div>
@@ -101,8 +103,6 @@
 </style>
 
 <script>
-// const { ipcRenderer } = require("electron");
-
 export default {
   data: function () {
     return {

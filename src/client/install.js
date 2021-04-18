@@ -23,11 +23,11 @@ function install() {
     let rs;
     fs.mkdirSync(INSTALL_PATH, { recursive: true });
     fs.copyFileSync("./nssm.exe", NSSM_PATH);
-    fs.copyFileSync("./myScreenshot.exe", `${INSTALL_PATH}myScreenshot.exe`);
-    fs.copyFileSync(
-      "./screenCapture_1.3.2.exe",
-      `${INSTALL_PATH}screenCapture_1.3.2.exe`
-    );
+    // fs.copyFileSync("./myScreenshot.exe", `${INSTALL_PATH}myScreenshot.exe`);
+    // fs.copyFileSync(
+    //   "./screenCapture_1.3.2.exe",
+    //   `${INSTALL_PATH}screenCapture_1.3.2.exe`
+    // );
     fs.copyFileSync("./" + BACKEND_NAME, BACKEND_PATH);
     // sleep(1000);
     execSync(`${NSSM_PATH} install ${SERVICE_NAME} ${BACKEND_PATH}`);

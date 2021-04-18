@@ -42,7 +42,7 @@
           </button>
         </div>
       </div>
-      <div v-if="screenshot.src" class="scrennshotWrapper">
+      <!-- <div v-if="screenshot.src" class="scrennshotWrapper">
         <p @click="clearImg">X</p>
         <img
           id="screenshot"
@@ -50,7 +50,7 @@
           :style="screenshotStyle"
           @click="scaleTrigger"
         />
-      </div>
+      </div> -->
       <div id="ClientGroup">
         <template v-for="i in clientArr" :key="i.id">
           <div
@@ -73,7 +73,20 @@
         :msg="msg"
         :template="contextMenu.template"
       ></context-menu>
-      <notification></notification>
+      <notification-pop
+        title="截图"
+        type="corner"
+        ref="notification"
+        :show="screenshot.show"
+        @close="screenshot.show = false"
+      >
+        <img
+          :src="screenshot.src"
+          :style="screenshotStyle"
+          @click="scaleTrigger"
+        />
+        <p>点击进行缩放</p></notification-pop
+      >
     </div>
   </div>
 </template>
@@ -83,9 +96,8 @@
 import sio from "socket.io-client";
 import ss from "socket.io-stream";
 import { SERVER_ADDRESS, SERVER_PORT } from "../../../my_config";
-import ContextMenuVue from "../../components/ContextMenu.vue";
-import NotificationVue from "../../components/Notification.vue";
 export default {
+  name: "Clients",
   data() {
     return {
       verify: {
@@ -100,6 +112,7 @@ export default {
       server_status: "未连接",
       newBackendName: "backend",
       screenshot: {
+        show: false,
         enlarge: false,
         src: "",
       },
@@ -183,8 +196,13 @@ export default {
             margin: "auto",
             // height: "90vh",
             width: "80vw",
+            border: "1px black solid",
           }
-        : {};
+        : // {
+          //   width: "80vw",
+          //   height: "auto",
+          // }
+          { width: "30vw", height: "auto" };
     },
     status_style() {
       let tmp = {};
@@ -226,42 +244,61 @@ export default {
       e.preventDefault();
     });
 
-    window.clientArr = [];
+    // window.clientArr = [];
     window.cmdResult = {
       data: "",
+      changed: false,
     };
-    window.io = sio.connect(`${SERVER_ADDRESS}:${SERVER_PORT}`, {
-      // withCredentials: true,
-    });
-    window.ss = ss;
-    window.server_status = "未连接";
 
-    window.io.on("connect", () => {
-      window.io.send({ admin: true });
-      window.server_status = "已连接";
-    });
-
-    window.io.on("disconnect", () => {
-      window.server_status = "已断开";
-    });
-
-    window.io.on("apigetallclients", (carr) => {
-      window.clientArr = carr;
-      window.server_status = "已连接";
+    window.cmdResult = new Proxy(window.cmdResult, {
+      get(target, key) {
+        return target[key];
+      },
+      set(target, key, value) {
+        target[key] = value;
+        //监听data改变
+        if (key == "data") {
+          window.cmdResult.changed = true;
+        }
+        return true;
+      },
     });
 
-    window.io.on("apisendcmd", (cmdresult) => {
-      window.cmdResult = cmdresult;
-      console.log(cmdresult);
-    });
+    if (!window.io) {
+      window.io = sio.connect(`${SERVER_ADDRESS}:${SERVER_PORT}`, {
+        // withCredentials: true,
+      });
+      window.ss = ss;
+      // window.server_status = "未连接";
 
-    window.io.on("apigetscreenshot", (imgbase64) => {
-      window.screenshot = `data:image/jpg;base64,${imgbase64}`;
-    });
+      window.io.on("connect", () => {
+        window.io.send({ admin: true });
+        window.server_status = "已连接";
+      });
 
-    window.io.on("debug", (msg) => {
-      console.log(`--DEBUG:\n${msg}`);
-    });
+      window.io.on("disconnect", () => {
+        window.server_status = "已断开";
+      });
+
+      window.io.on("apigetallclients", (carr) => {
+        window.clientArr = carr;
+        window.server_status = "已连接";
+      });
+
+      window.io.on("apisendcmd", (cmdresult) => {
+        window.cmdResult.data = cmdresult.data;
+        console.log(cmdresult);
+      });
+
+      window.io.on("apigetscreenshot", (imgbase64) => {
+        window.screenshot = `data:image/jpg;base64,${imgbase64}`;
+        this.screenshot.show = true;
+      });
+
+      window.io.on("debug", (msg) => {
+        console.log(`--DEBUG:\n${msg}`);
+      });
+    }
 
     this.interval = setInterval(() => {
       //!!
@@ -388,10 +425,10 @@ export default {
       });
     },
   },
-  components: {
-    "context-menu": ContextMenuVue,
-    notification: NotificationVue,
-  },
+  // components: {
+  //   "context-menu": ContextMenuVue,
+  //   notification: NotificationVue,
+  // },
 };
 </script>
 
@@ -454,7 +491,7 @@ export default {
     width: 49%;
 
     p {
-      // user-select: none;
+      user-select: none;
     }
 
     &:hover {

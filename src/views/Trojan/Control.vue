@@ -84,13 +84,18 @@ export default {
     };
     this.clientArr = window.clientArr;
     this.interval = setInterval(() => {
-      if (window.cmdResult.data.length) {
+      if (window.cmdResult.changed) {
         this.sshStatus = "";
-        this.sshOutput = this.sshOutput.concat(window.cmdResult.data);
+        if (window.cmdResult.data == "") {
+          this.sshOutput = this.sshOutput.concat("\n当前命令返回了空的回调\n");
+        } else {
+          this.sshOutput = this.sshOutput.concat(window.cmdResult.data);
+        }
         setTimeout(() => {
           this.$refs.sshOutput.scrollTop = this.$refs.sshOutput.scrollHeight;
         }, 100);
-        window.cmdResult.data = "";
+        // window.cmdResult.data = "";
+        window.cmdResult.changed = false;
       }
 
       if (util.IdIndex(this.id) == -1) {
@@ -101,7 +106,8 @@ export default {
     }, 200);
   },
   beforeRouteLeave(to, from, next) {
-    window.cmdResult.data = "";
+    // window.cmdResult.data = "";
+    window.cmdResult.changed = false;
     clearInterval(this.interval);
 
     //清除快捷键注册
@@ -168,6 +174,7 @@ export default {
       flex-direction: column;
       // margin-top: 10%;
       height: 50vh;
+      align-self: center;
       textarea {
         // border: none;
         margin-top: 5%;
