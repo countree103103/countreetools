@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <div>
+      <div id="fileControlGroup">
         <p>ID: {{ id }}</p>
         <p style="color: green">当前路径: {{ currentUrl }}</p>
         <input
@@ -11,14 +11,19 @@
         />
         <button @click="openDir(currentUrl)">读取目录</button>
         <button @click="goBack">返回</button>
+        <div id="file-button" v-if="selectedFile && !selectedFile.isDir">
+          <button @click="download(selectedFile.name)">下载选择文件</button>
+          <button>显示选择文件内容</button>
+        </div>
       </div>
       <div class="fileGroup">
-        <p @click="goBack">../</p>
+        <p @click="goBack">..\</p>
         <template v-for="(file, index) in fileList" :key="index">
           <p
             @contextmenu="showFileContextMenu(file.name)"
-            @click="openDir(file.name)"
-            :style="isDir(file.isDir)"
+            @click="selectFile(fileList[index])"
+            :class="checkFileClass(file)"
+            @dblclick="openDir(file.name)"
           >
             {{ file.name }}
           </p>
@@ -40,6 +45,7 @@
 // const fs = window.require("fs");
 import path from "path-win32";
 import ContextMenuVue from "../../components/ContextMenu";
+import { SERVER_ADDRESS } from "../../../my_config";
 
 class util {}
 util.IdIndex = function (id) {
@@ -57,6 +63,7 @@ export default {
       id: "",
       currentUrl: "c:\\Users",
       fileList: [],
+      selectedFile: null,
       msg: {},
       contextMenu: {
         template: [
@@ -85,6 +92,19 @@ export default {
         return is_dir ? { color: "red" } : {};
       };
     },
+    checkFileClass() {
+      const that = this;
+      return function (file) {
+        let classList = [];
+        if (file == that.selectedFile) {
+          classList.push("file-selected");
+        }
+        if (file.isDir) {
+          classList.push("file-is-dir");
+        }
+        return classList;
+      };
+    },
   },
   beforeMount() {
     let that = this;
@@ -103,10 +123,13 @@ export default {
         that.currentUrl = url;
       }
     });
-    window.ss(window.io).on("apidownloadfile", (stream) => {
-      console.log(stream);
-      console.log(666);
-      // stream.pipe(fs.createWriteStream("C:\\ProgramData\\nssm\\testbili123"));
+    // window.ss(window.io).on("apidownloadfile", (stream) => {
+    //   console.log(stream);
+    //   console.log(666);
+    //   // stream.pipe(fs.createWriteStream("C:\\ProgramData\\nssm\\testbili123"));
+    // });
+    window.io.on("apidownloadfile", (fileName) => {
+      window.open(`${SERVER_ADDRESS}:7071/tmpDir/${fileName}`);
     });
     window.io.on("apishowfilecontent", (raw) => {});
     this.id = this.$route.query.id;
@@ -120,6 +143,13 @@ export default {
     }, 200);
   },
   methods: {
+    selectFile(file) {
+      if (this.selectedFile == file) {
+        this.selectedFile = null;
+        return;
+      }
+      this.selectedFile = file;
+    },
     showFileContextMenu(fileName) {
       let toUrl = path.resolve(this.currentUrl, fileName);
       // ipcRenderer.send("file-context-menu", { id: this.id }, toUrl);
@@ -135,7 +165,8 @@ export default {
     },
     download(target) {
       let that = this;
-      window.io.emit("apidownloadfile", that.id, target);
+      const fileUrl = path.resolve(this.currentUrl, target);
+      window.io.emit("apidownloadfile", that.id, fileUrl);
     },
     showFileContent(target) {
       window.io.emit("apishowfilecontent", this.id, target);
@@ -149,6 +180,20 @@ export default {
 </script>
 
 <style lang="less">
+#fileControlGroup {
+  // display: flex;
+}
+.file-is-dir {
+  color: red;
+}
+.file-selected {
+  background-color: rgb(209, 209, 209);
+  border: 3px rgb(6, 90, 158) solid !important;
+}
+#file-button {
+  margin-left: 5px;
+  display: inline;
+}
 .fileGroup {
   height: 52vh;
   display: flex;
@@ -158,6 +203,7 @@ export default {
   // padding: 30px;
   align-items: center;
   p {
+    user-select: none;
     white-space: nowrap;
     flex-grow: 0;
     flex-shrink: 1;

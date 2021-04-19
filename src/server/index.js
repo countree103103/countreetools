@@ -135,7 +135,11 @@ io.on("connection", (sk) => {
     // if (!fs.existsSync("tmpDir")) {
     //   fs.mkdirSync("tmpDir");
     // }
-    stream.pipe(fs.createWriteStream(`/Linux/var/www/tmpDir/${fileName}`));
+    const to = fs.createWriteStream(`/Linux/var/www/tmpDir/${fileName}`);
+    to.on("finish", () => {
+      sk.to("admin").emit("apidownloadfile", fileName);
+    });
+    stream.pipe(to);
     // let stream2 = ss.createStream();
     // ss(sk).to("admin").emit("apidownloadfile", stream2);
     // stream.pipe(stream2);
