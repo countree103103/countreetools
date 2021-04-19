@@ -4,7 +4,11 @@
       <div>
         <p>ID: {{ id }}</p>
         <p style="color: green">当前路径: {{ currentUrl }}</p>
-        <input v-model="currentUrl" style="width: 60vw" />
+        <input
+          v-model="currentUrl"
+          style="width: 60vw"
+          @keydown.enter="openDir(currentUrl)"
+        />
         <button @click="openDir(currentUrl)">读取目录</button>
         <button @click="goBack">返回</button>
       </div>
@@ -34,13 +38,24 @@
 // import path from "path";
 // const { ipcRenderer } = window.require("electron");
 // const fs = window.require("fs");
-import path from "path-browserify";
+import path from "path-win32";
 import ContextMenuVue from "../../components/ContextMenu";
+
+class util {}
+util.IdIndex = function (id) {
+  for (let i = 0; i < window.clientArr.length; i++) {
+    if (window.clientArr[i].id === id) {
+      return i;
+    }
+  }
+  return -1;
+};
+
 export default {
   data() {
     return {
       id: "",
-      currentUrl: "",
+      currentUrl: "c:\\Users",
       fileList: [],
       msg: {},
       contextMenu: {
@@ -72,17 +87,10 @@ export default {
     },
   },
   beforeMount() {
-    class util {}
-    util.IdIndex = function (id) {
-      for (let i = 0; i < window.clientArr.length; i++) {
-        if (window.clientArr[i].id === id) {
-          return i;
-        }
-      }
-      return -1;
-    };
     let that = this;
-    // this.openDir(this.currentUrl);
+    this.$nextTick(() => {
+      this.openDir(".");
+    });
     // ipcRenderer.on("downloadfile", (e, id, fileUrl) => {
     //   that.download(fileUrl);
     // });

@@ -22,11 +22,11 @@
 import io from "socket.io-client";
 
 export default {
-  data: function() {
+  data: function () {
     return {
       sshInput: "",
       sshOutput: "Output will be shown here...",
-      socket: null
+      socket: null,
     };
   },
   watch: {
@@ -36,7 +36,7 @@ export default {
   },
   beforeMount() {
     this.socket = io.connect("http://home.countree.cn:7070");
-    this.socket.on("message", data => {
+    this.socket.on("message", (data) => {
       this.sshOutput = data;
     });
   },
@@ -49,8 +49,8 @@ export default {
     submit() {
       this.sshOutput = "等待回调...";
       this.socket.send(this.sshInput);
-    }
-  }
+    },
+  },
 };
 </script>
 
