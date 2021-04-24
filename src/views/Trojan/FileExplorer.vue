@@ -17,16 +17,21 @@
         </div>
       </div>
       <div class="fileGroup">
-        <p @click="goBack">..\</p>
+        <p @dblclick="goBack">..\</p>
         <template v-for="(file, index) in fileList" :key="index">
           <p
             @contextmenu="showFileContextMenu(file.name)"
             @click="selectFile(fileList[index])"
-            :class="checkFileClass(file)"
             @dblclick="openDir(file.name)"
+            :class="isSelected(file)"
           >
+            <i
+              :class="getExtCssObj(file.name).class"
+              :style="getExtCssObj(file.name).style"
+            ></i>
             {{ file.name }}
           </p>
+          <!-- <hr /> -->
         </template>
       </div>
     </div>
@@ -46,6 +51,7 @@
 import path from "path-win32";
 import ContextMenuVue from "../../components/ContextMenu";
 import { SERVER_ADDRESS } from "../../../my_config";
+import EXT from "./ext.js";
 
 class util {}
 util.IdIndex = function (id) {
@@ -92,17 +98,23 @@ export default {
         return is_dir ? { color: "red" } : {};
       };
     },
-    checkFileClass() {
+    isSelected() {
       const that = this;
       return function (file) {
         let classList = [];
         if (file == that.selectedFile) {
           classList.push("file-selected");
         }
-        if (file.isDir) {
-          classList.push("file-is-dir");
-        }
+        // if (file.isDir) {
+        //   classList.push("file-is-dir");
+        // }
         return classList;
+      };
+    },
+    getExtCssObj() {
+      return function (file) {
+        const extName = path.extname(file);
+        return EXT.calcClass(extName);
       };
     },
   },
@@ -118,7 +130,7 @@ export default {
     window.io.on("apilistdir", (result, url) => {
       // console.log(result);
       if (result.length) {
-        console.log(result);
+        // console.log(result);
         that.fileList = result;
         that.currentUrl = url;
       }
@@ -160,7 +172,7 @@ export default {
     },
     openDir(target) {
       let toUrl = path.resolve(this.currentUrl, target);
-      console.log(toUrl);
+      // console.log(toUrl);
       window.io.emit("apilistdir", this.id, toUrl);
     },
     download(target) {
@@ -188,41 +200,56 @@ export default {
 }
 .file-selected {
   background-color: rgb(209, 209, 209);
-  border: 3px rgb(6, 90, 158) solid !important;
+  border-bottom: 3px rgb(6, 90, 158) solid !important;
 }
 #file-button {
   margin-left: 5px;
   display: inline;
 }
 .fileGroup {
+  // box-sizing: border-box;
   height: 52vh;
   display: flex;
   flex-direction: column;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   overflow: scroll;
   // padding: 30px;
   align-items: center;
+  width: 100%;
   p {
+    // box-sizing: border-box;
+    width: 100%;
+    text-align: left;
+    margin: 5px 0 5px 10%;
+    padding: 10px 5% 10px 5%;
+    // margin: 0 auto;
     user-select: none;
-    white-space: nowrap;
+    // white-space: nowrap;
     flex-grow: 0;
     flex-shrink: 1;
     margin-top: 3px;
-    width: 20vw;
     cursor: pointer;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border: 1px black solid;
-    height: 4vh;
+    // overflow: hidden;
+    // text-overflow: ellipsis;
+    // border-top: 1px rgb(153, 153, 153) solid;
+    border-bottom: 1px rgb(153, 153, 153) solid;
+    // height: 5vh;
     &:hover {
       // width: auto;
       overflow: visible;
       text-overflow: inherit;
       // background-color: lightcoral;
-      font-size: 1.1rem;
-      text-shadow: 1px 0 black;
+      // font-size: 1.1rem;
+      // transform: scale(1.05);
+      // transform-origin: left top;
       z-index: 999;
       // width: 30vw;
+      // box-shadow: 0.5px 0 2px 1px black;
+      // border-top: 1.2px solid black;
+      border-bottom: 1.2px solid black;
+    }
+    i {
+      margin-right: 10px;
     }
   }
 }
