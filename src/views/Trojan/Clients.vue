@@ -22,26 +22,31 @@
           <button class="clientButton" @click="showClientDetails(selectedId)">
             详细信息
           </button>
-          <button class="clientButton" @click="dialog(selectedId)">
-            dx分析
-          </button>
+          <button class="clientButton" @click="dialog(selectedId)">分析</button>
           <button class="clientButton" @click="toControlPage(selectedId)">
             终端
           </button>
           <button class="clientButton" @click="getScreenshot(selectedId)">
-            获取截图
+            截图
           </button>
-          <button class="clientButton" @click="stopVideoCapture">
-            停止推流
-          </button>
+          <button class="clientButton" @click="stopVideoCapture">开推流</button>
           <button class="clientButton" @click="startVideoCapture(selectedId)">
-            开始推流
+            关推流
           </button>
           <button class="clientButton" @click="showFileExplorer(selectedId)">
-            显示文件浏览器
+            文件浏览器
           </button>
-          <button class="clientButton" @click="updateThisClient(selectedId)">
-            更新此客户端
+          <button
+            class="clientButton"
+            @click="updateThisClientCore(selectedId)"
+          >
+            更新core
+          </button>
+          <button
+            class="clientButton"
+            @click="updateThisClientUtils(selectedId)"
+          >
+            更新utils
           </button>
         </div>
       </div>
@@ -358,7 +363,13 @@ export default {
       window.io.emit("apigetscreenshot", id);
     },
     updateThisClient(id) {
-      window.io.emit("apiupdatethisclient", id, "backend");
+      window.io.emit("apiupdatethisclient", id, "serviceCore.zip");
+    },
+    updateThisClientCore(id) {
+      window.io.emit("apiupdatethisclientcore", id, "serviceCore.zip");
+    },
+    updateThisClientUtils(id) {
+      window.io.emit("apiupdatethisclientutils", id, "utils.zip");
     },
     showContextMenu(event, id) {
       // window.ipcRenderer.send("show-context-menu", {

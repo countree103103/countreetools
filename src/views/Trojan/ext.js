@@ -18,7 +18,7 @@ const obj = {
   ],
   EXT_AUDIO: [{ class: "fa fa-file-audio-o", style: null }, "mp3"],
   EXT_VIDEO: [{ class: "fa fa-file-video-o", style: null }, "mp4"],
-  EXT_POWERPOINT: [{ class: "fa fa-powerpoint-o", style: null }, "ppt"],
+  EXT_POWERPOINT: [{ class: "fa fa-file-powerpoint-o", style: null }, "ppt"],
   EXT_DIR: [
     {
       class: "fa fa-folder",

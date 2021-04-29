@@ -9,6 +9,7 @@ export default createStore({
     clients: {
       verify: {
         show: false,
+        // show: true,
       },
     },
     contextMenu: {

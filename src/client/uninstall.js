@@ -1,55 +1,117 @@
 const fs = require("fs");
 const { execSync } = require("child_process");
 
-const INSTALL_PATH = "C:\\ProgramData\\nssm\\";
-let BACKEND_NAME;
-try {
-  BACKEND_NAME = fs
-    .readFileSync(`${INSTALL_PATH}serviceName`)
-    .toString()
-    .split("%")[1];
-} catch (e) {
-  console.log("获取backend名字失败");
-  console.log(e);
-  sleep(10000);
-  return;
+const gConfig = require("../../my_config");
+
+function getOldBackendName() {
+  let OLD_BACKEND_NAME;
+  if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+    OLD_BACKEND_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}fileToClean`)
+      .toString()
+      .split("%")[1];
+  } else {
+    OLD_BACKEND_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+      .toString()
+      .split("%")[1];
+  }
+
+  return OLD_BACKEND_NAME;
+  // const OLD_SERVICE_NAME = fs
+  //   .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+  //   .toString()
+  //   .split("%")[0];
 }
 
-const BACKEND_PATH = `${INSTALL_PATH}${BACKEND_NAME}`;
-const NSSM_PATH = `${INSTALL_PATH}nssm.exe`;
-// const SERVICE_NAME = "ammc";
+function getOldServiceName() {
+  // const OLD_BACKEND_NAME = fs
+  //   .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+  //   .toString()
+  //   .split("%")[1];
 
-// const path = require("path");
-let SERVICE_NAME;
+  let OLD_SERVICE_NAME;
+  if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+    OLD_SERVICE_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}fileToClean`)
+      .toString()
+      .split("%")[0];
+  } else {
+    OLD_SERVICE_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+      .toString()
+      .split("%")[0];
+  }
 
-try {
-  // SERVICE_NAME = execSync(`type "${INSTALL_PATH}serviceName"`);
-  SERVICE_NAME = fs
-    .readFileSync(`${INSTALL_PATH}serviceName`)
-    .toString()
-    .split("%")[0];
-  // SERVICE_NAME =
-} catch (e) {
-  console.log("获取服务名失败");
-  console.log(e);
-  sleep(10000);
-  return;
+  return OLD_SERVICE_NAME;
 }
+
+function getOldBootstrapperName() {
+  let OLD_BOOTRAPPER_NAME;
+  if (fs.existsSync(`${gConfig.INSTALL_PATH}fileToClean`)) {
+    OLD_BOOTRAPPER_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}fileToClean`)
+      .toString()
+      .split("%")[2];
+  } else {
+    OLD_BOOTRAPPER_NAME = fs
+      .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+      .toString()
+      .split("%")[2];
+  }
+
+  return OLD_BOOTRAPPER_NAME;
+}
+
+// let BACKEND_NAME;
+// try {
+//   BACKEND_NAME = fs
+//     .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+//     .toString()
+//     .split("%")[1];
+// } catch (e) {
+//   console.log("获取backend名字失败");
+//   console.log(e);
+//   sleep(10000);
+//   return;
+// }
+
+// const BACKEND_PATH = `${gConfig.INSTALL_PATH}${BACKEND_NAME}`;
+// const NSSM_PATH = `${gConfig.INSTALL_PATH}nssm.exe`;
+// let SERVICE_NAME;
+
+// try {
+//   SERVICE_NAME = fs
+//     .readFileSync(`${gConfig.INSTALL_PATH}serviceName`)
+//     .toString()
+//     .split("%")[0];
+// } catch (e) {
+//   console.log("获取服务名失败");
+//   console.log(e);
+//   sleep(10000);
+//   return;
+// }
 
 function uninstall() {
   try {
     try {
-      execSync(`${NSSM_PATH} status ${SERVICE_NAME}`);
+      execSync(`${gConfig.NSSM_PATH} status ${getOldServiceName()}`);
     } catch (e) {
       console.log(`服务未安装`);
       sleep(3000);
       return;
     }
-    execSync(`${NSSM_PATH} remove ${SERVICE_NAME} confirm`);
-    execSync(`${NSSM_PATH} stop ${SERVICE_NAME}`);
+    execSync(`${gConfig.NSSM_PATH} remove ${getOldServiceName()} confirm`);
+    execSync(`${gConfig.NSSM_PATH} stop ${getOldServiceName()}`);
     // fs.rmdirSync(`${INSTALL_PATH}`, { recursive: true });
-    fs.unlinkSync(BACKEND_PATH);
-    fs.unlinkSync(`${INSTALL_PATH}serviceName`);
+    let fileArr = fs.readdirSync(`${gConfig.INSTALL_PATH}`);
+    try {
+      for (const file of fileArr) {
+        fs.unlinkSync(`${gConfig.INSTALL_PATH}\\${file}`);
+      }
+    } catch (error) {
+      console.log("未完全清理");
+    }
     console.log("卸载完毕");
     sleep(1000);
   } catch (e) {
