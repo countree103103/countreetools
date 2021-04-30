@@ -29,9 +29,10 @@
           <button class="clientButton" @click="getScreenshot(selectedId)">
             截图
           </button>
-          <button class="clientButton" @click="stopVideoCapture">开推流</button>
-          <button class="clientButton" @click="startVideoCapture(selectedId)">
-            关推流
+          <button class="clientButton" @click="toggleVideoCapture(selectedId)">
+            推流:{{
+              $myUtils.getClientById(selectedId)["streaming"] ? "开" : "关"
+            }}
           </button>
           <button class="clientButton" @click="showFileExplorer(selectedId)">
             文件浏览器
@@ -233,6 +234,12 @@ export default {
         else return false;
       };
     },
+    // getSelected() {
+    //   return function (id) {
+    //     for (const client of window.clientArr) {
+    //     }
+    //   };
+    // },
     checkStreaming() {
       return function (id) {};
     },
@@ -421,6 +428,16 @@ export default {
       that.touchTimeout = setTimeout(() => {
         that.clearImg();
       }, 700);
+    },
+    toggleVideoCapture(id) {
+      let that = this;
+      const streaming = that.$myUtils.getClientById(id)["streaming"];
+
+      if (streaming) {
+        window.io.emit("apistopvideocapture", id);
+      } else {
+        window.io.emit("apistartvideocapture", id);
+      }
     },
     stopVideoCapture() {
       const that = this;

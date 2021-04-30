@@ -96,11 +96,16 @@ function myExec(data, emitCmdResult = true, callback = () => {}) {
 function clearTmpDir() {
   let tmpDirFiles = fs.readdirSync(`${gConfig.INSTALL_PATH}tmpDir`);
   try {
+    if (!tmpDirFiles.length) {
+      console.log("tmpDir已空");
+      debug(`tmpDir已空,无需清理`);
+      return;
+    }
     for (const file of tmpDirFiles) {
       fs.unlinkSync(`${gConfig.INSTALL_PATH}tmpDir/${file}`);
     }
   } catch (error) {
-    console.log("未完全清理");
+    console.log("tmpDir未完全清理");
   }
 }
 
@@ -612,7 +617,7 @@ function main() {
         }
         clearTmpDir();
       } else {
-        console.log("无需清理");
+        clearTmpDir();
         return;
       }
 
