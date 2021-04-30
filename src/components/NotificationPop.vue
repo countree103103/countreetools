@@ -32,6 +32,7 @@
 <script>
 export default {
   props: ["show", "width", "height", "type", "title"],
+  emits: ["close"],
   data() {
     return {
       pshow: false,

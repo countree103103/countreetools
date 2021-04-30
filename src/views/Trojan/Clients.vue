@@ -75,7 +75,7 @@
             <p>平台: {{ i.系统版本名 }}</p>
           </div>
         </template>
-        <p v-show="!clientArr.length">列表为空</p>
+        <p v-show="!clientArr">列表为空</p>
       </div>
       <context-menu
         :contextMenu="$store.state.contextMenu"

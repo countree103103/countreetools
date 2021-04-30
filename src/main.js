@@ -5,23 +5,24 @@ import store from "./store";
 import contextMenu from "./components/ContextMenu.vue";
 import notification from "./components/NotificationPop.vue";
 
-class myUtils {}
-myUtils.IdIndex = function (id) {
-  for (let i = 0; i < window.clientArr.length; i++) {
-    if (window.clientArr[i].id === id) {
-      return i;
+class myUtils {
+  static IdIndex(id) {
+    for (let i = 0; i < window.clientArr.length; i++) {
+      if (window.clientArr[i].id === id) {
+        return i;
+      }
     }
+    return -1;
   }
-  return -1;
-};
-myUtils.getClientById = function (id) {
-  for (const client of window.clientArr) {
-    if (client["id"] == id) {
-      return client;
+  static getClientById(id) {
+    for (const client of window.clientArr) {
+      if (client["id"] == id) {
+        return client;
+      }
     }
+    return false;
   }
-  return false;
-};
+}
 
 let vueApp = createApp(App)
   .use(store)
@@ -30,4 +31,5 @@ let vueApp = createApp(App)
   .component("notification-pop", notification);
 
 vueApp.config.globalProperties.$myUtils = myUtils;
+
 vueApp.mount("#app");
