@@ -49,7 +49,7 @@ export default {
     return {
       clientArr: window.clientArr,
       sshInput: "",
-      sshOutput: "终端回调结果显示在这里",
+      sshOutput: "终端回调结果显示在这里\n",
       sshStatus: "",
       interval: null,
       powershell: true,
