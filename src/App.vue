@@ -9,7 +9,7 @@
     </div>
     <div id="viewWrapper">
       <router-view v-slot="{ Component }">
-        <transition name="ani">
+        <transition name="ani" mode="out-in">
           <keep-alive include="Clients"
             ><component :is="Component"
           /></keep-alive>
@@ -46,7 +46,7 @@
 }
 
 .ani-leave-active {
-  animation: ani 0.05s reverse;
+  animation: ani 0.1s reverse;
 }
 
 #app {

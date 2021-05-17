@@ -17,21 +17,37 @@
         </div>
       </div>
       <div class="fileGroup">
-        <p @dblclick="goBack">..\</p>
+        <div class="filesWrapper" @dblclick="goBack">
+          <div class="fileName">
+            <p>..\</p>
+          </div>
+        </div>
         <template v-for="(file, index) in fileList" :key="index">
-          <p
+          <div
+            class="filesWrapper"
+            :class="isSelected(file)"
             @contextmenu="showFileContextMenu(file.name)"
             @click="selectFile(fileList[index])"
             @dblclick="openDir(file.name)"
-            :class="isSelected(file)"
           >
-            <i
-              :class="getExtCssObj(file.name).class"
-              :style="getExtCssObj(file.name).style"
-            ></i>
-            {{ file.name }}
-          </p>
-          <!-- <hr /> -->
+            <div class="fileName">
+              <p>
+                <i
+                  :class="getExtCssObj(file.name).class"
+                  :style="getExtCssObj(file.name).style"
+                ></i>
+                {{ file.name }}
+              </p>
+            </div>
+            <div class="fileInfo">
+              <p class="fileInfo_ctime" v-if="file.lstat.ctime">
+                {{ new Date(file.lstat.mtime).toLocaleString() }}
+              </p>
+              <p class="fileInfo_size" v-if="file.lstat.size">
+                {{ calcFileSize(file) }}
+              </p>
+            </div>
+          </div>
         </template>
       </div>
     </div>
@@ -162,6 +178,23 @@ export default {
       }
       this.selectedFile = file;
     },
+    calcFileSize(file) {
+      let size = file.lstat.size;
+
+      if (file.isDir) {
+        return null;
+      }
+
+      if (size < (1024 ^ 1)) {
+        return size.toFixed(2) + "B";
+      } else if (size < (1024 ^ 2) * 1000) {
+        return (size / 1024).toFixed(2) + "KB";
+      } else if (size < (1024 ^ 3) * 1000 * 1000) {
+        return (size / 1024 / 1024).toFixed(2) + "MB";
+      } else if (size < (1024 ^ 4) * 1000 * 1000 * 1000) {
+        return (size / 1024 / 1024 / 1024).toFixed(2) + "GB";
+      }
+    },
     showFileContextMenu(fileName) {
       let toUrl = path.resolve(this.currentUrl, fileName);
       // ipcRenderer.send("file-context-menu", { id: this.id }, toUrl);
@@ -192,9 +225,6 @@ export default {
 </script>
 
 <style lang="less">
-#fileControlGroup {
-  // display: flex;
-}
 .file-is-dir {
   color: red;
 }
@@ -207,6 +237,41 @@ export default {
   display: inline;
 }
 .fileGroup {
+  .filesWrapper {
+    // display: flex;
+    // flex-direction: row;
+    // justify-content: space-between;
+    // align-items: space-between;
+    // flex-grow: 1;
+    padding: 2vh 0 2vh 0;
+    width: 90%;
+    display: grid;
+    grid-template-rows: repeat(auto-fill);
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px rgb(153, 153, 153) solid;
+    &:hover {
+      border-bottom: 1.2px solid black;
+    }
+  }
+  .fileName {
+    // width: 40%;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    @media screen {
+    }
+    text-align: left;
+    word-break: break-all;
+    padding-right: 3vw;
+  }
+  .fileInfo {
+    font-size: 0.7rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    .fileInfo_size {
+    }
+  }
   // box-sizing: border-box;
   height: 52vh;
   display: flex;
@@ -216,41 +281,40 @@ export default {
   // padding: 30px;
   align-items: center;
   width: 100%;
-  p {
-    // box-sizing: border-box;
-    width: 100%;
-    text-align: left;
-    margin: 5px 0 5px 10%;
-    padding: 10px 5% 10px 5%;
-    // margin: 0 auto;
-    user-select: none;
-    // white-space: nowrap;
-    flex-grow: 0;
-    flex-shrink: 1;
-    margin-top: 3px;
-    cursor: pointer;
-    // overflow: hidden;
-    // text-overflow: ellipsis;
-    // border-top: 1px rgb(153, 153, 153) solid;
-    border-bottom: 1px rgb(153, 153, 153) solid;
-    // height: 5vh;
-    &:hover {
-      // width: auto;
-      overflow: visible;
-      text-overflow: inherit;
-      // background-color: lightcoral;
-      // font-size: 1.1rem;
-      // transform: scale(1.05);
-      // transform-origin: left top;
-      z-index: 999;
-      // width: 30vw;
-      // box-shadow: 0.5px 0 2px 1px black;
-      // border-top: 1.2px solid black;
-      border-bottom: 1.2px solid black;
-    }
-    i {
-      margin-right: 10px;
-    }
-  }
+  // p {
+  //   // box-sizing: border-box;
+  //   width: 100%;
+  //   text-align: left;
+  //   margin: 5px 0 5px 10%;
+  //   padding: 10px 5% 10px 5%;
+  //   // margin: 0 auto;
+  //   user-select: none;
+  //   // white-space: nowrap;
+  //   flex-grow: 0;
+  //   flex-shrink: 1;
+  //   margin-top: 3px;
+  //   cursor: pointer;
+  //   // overflow: hidden;
+  //   // text-overflow: ellipsis;
+  //   // border-top: 1px rgb(153, 153, 153) solid;
+
+  //   // height: 5vh;
+  //   &:hover {
+  //     // width: auto;
+  //     overflow: visible;
+  //     text-overflow: inherit;
+  //     // background-color: lightcoral;
+  //     // font-size: 1.1rem;
+  //     // transform: scale(1.05);
+  //     // transform-origin: left top;
+  //     z-index: 999;
+  //     // width: 30vw;
+  //     // box-shadow: 0.5px 0 2px 1px black;
+  //     // border-top: 1.2px solid black;
+  //   }
+  //   i {
+  //     margin-right: 10px;
+  //   }
+  // }
 }
 </style>

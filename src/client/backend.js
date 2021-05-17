@@ -1,27 +1,5 @@
 const fs = require("fs");
 const cmp = require("compressing");
-// const {
-//   gConfig.SERVER_ADDRESS,
-//   gConfig.UPDATE_ADDRESS,
-//   gConfig.SERVER_PORT,
-//   gConfig.UPDATE_PORT,
-//   RTMP_ADDRESS,
-//   RTMP_PORT,
-// } = require("../../my_config");
-// const {
-//   gConfig.INSTALL_PATH,
-//   BACKEND_NAME,
-//   BACKEND_PATH,
-//   NSSM_PATH,
-//   gConfig.UTILS_PATH,
-// } = require("../../my_config");
-
-// const {
-//   gStatus.isServiceStopped,
-//   gStatus.waitForServiceStatus,
-//   gStatus.isServiceExists,
-//   gStatus.STOPPED,
-// } = require("./status.js");
 const gConfig = require("../../my_config");
 const gStatus = require("./status");
 const cp = require("child_process");
@@ -73,6 +51,10 @@ function details(error) {
   return util.inspect(error, false, null, true);
 }
 
+function cmdDecode(data) {
+  return icv.decode(Buffer.from(data, "binary"), "cp936");
+}
+
 function myExec(data, emitCmdResult = true, callback = () => {}) {
   let result;
   cp.exec(data, { encoding: "binary" }, (error, stdout, stderr) => {
@@ -80,12 +62,12 @@ function myExec(data, emitCmdResult = true, callback = () => {}) {
     try {
       if (error) throw error;
       callback();
-      result = icv.decode(Buffer.from(stdout, "binary"), "cp936");
+      result = cmdDecode(stdout);
     } catch (error) {
       debug(`Exec error occured!\n`);
       debug(details(error));
-      debug(icv.decode(Buffer.from(stderr, "binary"), "cp936"));
-      result = icv.decode(Buffer.from(stderr, "binary"), "cp936");
+      debug(cmdDecode(stderr));
+      result = cmdDecode(stderr);
     }
     if (emitCmdResult) {
       io.emit("cmdresult", result);
@@ -489,6 +471,7 @@ io.on("listdir", (dir) => {
           result.push({
             name: item,
             isDir: fs.statSync(path.resolve(dir, item)).isDirectory(),
+            lstat: fs.lstatSync(path.resolve(dir, item)),
           });
         } catch (error) {
           io.emit("debug", "读取某个文件错误");

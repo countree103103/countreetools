@@ -1,7 +1,12 @@
 <template>
   <div id="trojan" @click="clearSelectedId(event)">
     <div v-show="!$store.state.clients.verify.show">
-      <input v-model="verify.password" style="margin-right: 7px" />
+      <input
+        v-model="verify.password"
+        style="margin-right: 7px"
+        type="password"
+        @keydown.enter="verifyPassword"
+      />
       <button @click="verifyPassword">verify</button>
     </div>
     <div
@@ -347,6 +352,8 @@ export default {
     verifyPassword() {
       if (this.verify.password == "52013140") {
         this.$store.state.clients.verify.show = true;
+      } else {
+        alert("Password wrong!");
       }
     },
     toControlPage(id) {
