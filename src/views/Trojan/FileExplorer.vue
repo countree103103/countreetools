@@ -17,12 +17,47 @@
         </div>
       </div>
       <div class="fileGroup">
-        <div class="filesWrapper" @dblclick="goBack">
+        <div class="fileLstat" style="position: absolute">
+          <div class="fileName" @click="switchSort('文件名')">
+            文件名<i
+              class="fa fa-angle-up"
+              v-if="calSortShow('文件名', '降序')"
+            ></i
+            ><i
+              class="fa fa-angle-down"
+              v-if="calSortShow('文件名', '升序')"
+            ></i>
+          </div>
+          <div class="fileInfo">
+            <p class="fileInfo_ctime" @click="switchSort('时间')">
+              修改时间<i
+                class="fa fa-angle-up"
+                v-if="calSortShow('时间', '降序')"
+              ></i
+              ><i
+                class="fa fa-angle-down"
+                v-if="calSortShow('时间', '升序')"
+              ></i>
+            </p>
+            <p class="fileInfo_size" @click="switchSort('文件大小')">
+              文件大小<i
+                class="fa fa-angle-up"
+                v-if="calSortShow('文件大小', '降序')"
+              ></i
+              ><i
+                class="fa fa-angle-down"
+                v-if="calSortShow('文件大小', '升序')"
+              ></i>
+            </p>
+          </div>
+        </div>
+        <div class="filesWrapper" @dblclick="goBack" style="margin-top: 30px">
           <div class="fileName">
             <p>..\</p>
           </div>
         </div>
-        <template v-for="(file, index) in fileList" :key="index">
+
+        <template v-for="(file, index) in sortedFileList" :key="index">
           <div
             class="filesWrapper"
             :class="isSelected(file)"
@@ -85,8 +120,13 @@ export default {
       id: "",
       currentUrl: "c:\\Users",
       fileList: [],
+      sortedFileList: [],
       selectedFile: null,
       msg: {},
+      sortedBy: {
+        name: "文件名",
+        type: "降序",
+      },
       contextMenu: {
         template: [
           {
@@ -108,7 +148,26 @@ export default {
       },
     };
   },
+  watch: {
+    fileList(nv, ov) {
+      this.sortFileList();
+    },
+    sortedBy: {
+      handler(nv, ov) {
+        this.sortFileList();
+      },
+      deep: true,
+    },
+  },
   computed: {
+    // sortedFileList() {
+    //   switch (this.sortedBy) {
+    //     case "文件名": {
+    //       return this.fileList.sort();
+    //     }
+    //   }
+    //   return this.fileList;
+    // },
     isDir() {
       return function (is_dir) {
         return is_dir ? { color: "red" } : {};
@@ -133,6 +192,14 @@ export default {
         return EXT.calcClass(extName);
       };
     },
+    calSortShow() {
+      let that = this;
+      return (name, type) => {
+        return name == this.sortedBy.name && type == this.sortedBy.type
+          ? true
+          : false;
+      };
+    },
   },
   beforeMount() {
     let that = this;
@@ -148,6 +215,7 @@ export default {
       if (result.length) {
         // console.log(result);
         that.fileList = result;
+        that.sortedFileList = that.fileList;
         that.currentUrl = url;
       }
     });
@@ -169,8 +237,106 @@ export default {
         this.$router.push("/trojan/clients");
       }
     }, 200);
+
+    this.sortFileList();
   },
   methods: {
+    switchSort(name) {
+      if (this.sortedBy.name == name) {
+        if (this.sortedBy.type == "升序") {
+          this.sortedBy.type = "降序";
+        } else if (this.sortedBy.type == "降序") {
+          this.sortedBy.type = "升序";
+        }
+      } else {
+        this.sortedBy = {
+          name: name,
+          type: "升序",
+        };
+      }
+      console.log(this.sortedBy);
+    },
+    sortFileList() {
+      switch (this.sortedBy.name) {
+        case "文件名": {
+          switch (this.sortedBy.type) {
+            case "升序": {
+              this.sortedFileList = this.fileList.sort((a, b) => {
+                if (a > b) {
+                  return 1;
+                } else {
+                  return -1;
+                }
+              });
+              break;
+            }
+            case "降序": {
+              this.sortedFileList = this.fileList.sort((a, b) => {
+                if (a < b) {
+                  return 1;
+                } else {
+                  return -1;
+                }
+              });
+              break;
+            }
+          }
+          break;
+        }
+        case "时间": {
+          switch (this.sortedBy.type) {
+            case "升序": {
+              this.sortedFileList = this.fileList.sort((a, b) => {
+                if (a.lstat.mtime > b.lstat.mtime) {
+                  return -1;
+                } else {
+                  return 1;
+                }
+              });
+              break;
+            }
+            case "降序": {
+              this.sortedFileList = this.fileList.sort((a, b) => {
+                if (a.lstat.mtime < b.lstat.mtime) {
+                  return -1;
+                } else {
+                  return 1;
+                }
+              });
+              break;
+            }
+          }
+
+          break;
+        }
+        case "文件大小": {
+          switch (this.sortedBy.type) {
+            case "升序": {
+              this.sortedFileList = this.fileList.sort((a, b) => {
+                if (a.lstat.size > b.lstat.size) {
+                  return -1;
+                } else {
+                  return 1;
+                }
+              });
+              break;
+            }
+            case "降序": {
+              this.sortedFileList = this.fileList.sort((a, b) => {
+                if (a.lstat.size < b.lstat.size) {
+                  return -1;
+                } else {
+                  return 1;
+                }
+              });
+              break;
+            }
+          }
+
+          break;
+        }
+      }
+    },
     selectFile(file) {
       if (this.selectedFile == file) {
         this.selectedFile = null;
@@ -225,6 +391,20 @@ export default {
 </script>
 
 <style lang="less">
+.fileLstat {
+  .fileGroup.filesWrapper();
+  * {
+    cursor: pointer;
+    user-select: none;
+  }
+  // border-bottom: 2px solid green;
+  border-bottom: 1.2px solid black;
+  background-color: gainsboro;
+  z-index: 999;
+  padding: 5px 0;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
 .file-is-dir {
   color: red;
 }
@@ -237,6 +417,7 @@ export default {
   display: inline;
 }
 .fileGroup {
+  margin-top: 10px;
   .filesWrapper {
     // display: flex;
     // flex-direction: row;

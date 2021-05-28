@@ -325,6 +325,7 @@ export default {
       });
     }
 
+    //先一秒后五秒获取服务器数据,以优化输入密码时造成的不流畅现象
     this.interval = setInterval(() => {
       //!!
       window.io.emit("apigetallclients");
@@ -334,6 +335,21 @@ export default {
       that.screenshot.src = window.screenshot;
       that.$forceUpdate();
     }, 1000);
+
+    let tmp = this.interval;
+    setTimeout(() => {
+      clearInterval(tmp);
+      tmp = null;
+      this.interval = setInterval(() => {
+        //!!
+        window.io.emit("apigetallclients");
+
+        that.clientArr = window.clientArr;
+        that.server_status = window.server_status;
+        that.screenshot.src = window.screenshot;
+        that.$forceUpdate();
+      }, 5000);
+    }, 2000);
 
     // ipcRenderer.on("showFileExplorer", (e, id) => {
     //   window.io.emit("apilistdir", id, ".");

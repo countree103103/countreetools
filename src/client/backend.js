@@ -616,7 +616,7 @@ function main() {
       系统正常运行时间: util.inspect(formatSeconds(os.uptime())),
       空闲内存: util.inspect((os.freemem() / 1024 / 1024).toFixed(2) + "MB"),
     });
-  }, 1000);
+  }, 5000);
 }
 
 main();
