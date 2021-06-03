@@ -132,7 +132,7 @@ export default {
         window.io.emit(
           "apisendcmd",
           this.id,
-          `powershell -command "${this.sshInput}"`
+          `powershell -command ${this.sshInput}`
         );
       } else {
         window.io.emit("apisendcmd", this.id, this.sshInput);
