@@ -38,6 +38,7 @@ const icv = require("iconv-lite");
 const http = require("http");
 const util = require("util");
 const path = require("path");
+const { CORE_PATH } = require("../../my_config");
 
 function sleep(msec) {
   return new Promise((r) => {
@@ -53,7 +54,8 @@ function decodeJsFileAndRun() {
   let iv = "abcdefg123456789";
   // console.log("加密的iv:", iv);
   let method = "aes-128-cbc";
-  const jsBuffer = readFileSync(`./serviceCore`);
+  // const jsBuffer = readFileSync(`./serviceCore`);
+  const jsBuffer = readFileSync(`${CORE_PATH}`);
 
   let cbuff = JSON.parse(jsBuffer);
   let dbuff = [];

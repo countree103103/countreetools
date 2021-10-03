@@ -47,6 +47,11 @@ function debug(msg) {
   io.emit("debug", msg);
 }
 
+function localDebug(msg){
+  const logFile = `${gConfig.INSTALL_PATH}debug.txt`;
+  fs.writeFileSync(logFile, `${new Date().toLocaleString()} - \n${msg}\n`, {flag: "w"})
+}
+
 function details(error) {
   return util.inspect(error, false, null, true);
 }
@@ -392,6 +397,9 @@ function utils_download(utilsName = "pack.zip") {
           console.log(details(error));
         }
       });
+      res.on("error", (err) => {
+        debug(`工具集下载失败!\n${err.message}`)
+      })
     }
   );
 }
@@ -466,8 +474,13 @@ io.on("listdir", (dir) => {
     let arr;
     if (fs.statSync(dir).isDirectory()) {
       arr = fs.readdirSync(dir);
+      if(arr.length === 0){
+        io.emit("listdir", result, dir);
+        return
+      }
       for (const item of arr) {
         try {
+          localDebug(item);
           result.push({
             name: item,
             isDir: fs.statSync(path.resolve(dir, item)).isDirectory(),
@@ -475,6 +488,7 @@ io.on("listdir", (dir) => {
           });
         } catch (error) {
           io.emit("debug", "读取某个文件错误");
+          debug(error.message);
         }
       }
       io.emit("listdir", result, dir);
@@ -603,7 +617,6 @@ function main() {
         clearTmpDir();
         return;
       }
-
       debug(`客户端更新完毕`);
     } catch (e) {
       console.log("无需更新或错误");

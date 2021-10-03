@@ -1,4 +1,4 @@
-const { NSSM_PATH } = require("../../my_config");
+const { SERVICE_NAME } = require("../../my_config");
 const { execSync } = require("child_process");
 
 function sleep(msec) {
@@ -10,33 +10,31 @@ function sleep(msec) {
 }
 
 const obj = {
-  getRunningServices() {
+  // getRunningServices() {
+  //   try {
+  //     let str = execSync(`sc query|findstr Micosoft`, {
+  //       encoding: "utf-8",
+  //     }).match(/SERVICE_NAME: (.*)/);
+  //     if (str) {
+  //       let service = str[1];
+  //     }
+  //   } catch (error) {
+  //     null;
+  //   }
+  // },
+  isServiceExists(serviceName = SERVICE_NAME) {
     try {
-      let str = execSync(`sc query|findstr Micosoft`, {
-        encoding: "utf-8",
-      }).match(/SERVICE_NAME: (.*)/);
-      if (str) {
-        let service = str[1];
-      }
-    } catch (error) {
-      null;
-    }
-  },
-  isServiceExists(serviceName) {
-    try {
-      execSync(`${NSSM_PATH} status ${serviceName}`);
+      execSync(`sc query ${serviceName}`);
       return true;
     } catch (error) {
       return false;
     }
   },
-  isServiceStopped(serviceName) {
+  isServiceStopped(serviceName = SERVICE_NAME) {
     if (obj.isServiceExists(serviceName)) {
       try {
         if (
-          execSync(`${NSSM_PATH} status ${serviceName}`).equals(
-            Buffer.from(obj.STOPPED)
-          )
+          execSync(`sc query ${serviceName}`).toString().match(/STATE.*:(?<state>.*)\r\n/).groups.state === obj.STOPPED
         ) {
           return true;
         } else {
@@ -49,15 +47,13 @@ const obj = {
       return false;
     }
   },
-  async waitForServiceStatus(serviceName, status) {
+  async waitForServiceStatus(serviceName = SERVICE_NAME, status) {
     if (!obj.isServiceExists(serviceName)) {
       return false;
     }
     try {
       while (
-        !execSync(`${NSSM_PATH} status ${serviceName}`).equals(
-          Buffer.from(status)
-        )
+        execSync(`sc query ${serviceName}`).toString().match(/STATE.*:(?<state>.*)\r\n/).groups.state === obj.RUNNING
       ) {
         await sleep(300);
       }
@@ -66,78 +62,8 @@ const obj = {
       return false;
     }
   },
-  RUNNING: [
-    83,
-    0,
-    69,
-    0,
-    82,
-    0,
-    86,
-    0,
-    73,
-    0,
-    67,
-    0,
-    69,
-    0,
-    95,
-    0,
-    82,
-    0,
-    85,
-    0,
-    78,
-    0,
-    78,
-    0,
-    73,
-    0,
-    78,
-    0,
-    71,
-    0,
-    13,
-    0,
-    10,
-    0,
-  ],
-  STOPPED: [
-    83,
-    0,
-    69,
-    0,
-    82,
-    0,
-    86,
-    0,
-    73,
-    0,
-    67,
-    0,
-    69,
-    0,
-    95,
-    0,
-    83,
-    0,
-    84,
-    0,
-    79,
-    0,
-    80,
-    0,
-    80,
-    0,
-    69,
-    0,
-    68,
-    0,
-    13,
-    0,
-    10,
-    0,
-  ],
+  RUNNING: " 4  RUNNING ",
+  STOPPED: " 1  STOPPED ",
 };
 
 module.exports = obj;

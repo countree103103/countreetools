@@ -2,6 +2,8 @@ const fs = require("fs");
 const { execSync } = require("child_process");
 
 const gConfig = require("../../my_config");
+const { INSTALL_PATH, SERVICE_NAME, SERVICE_EXE_PATH, SERVICE_EXE_NAME, BOOTSTRAPPER_NAME, UTILS_PATH, ExplorerUtil_PATH } = require("../../my_config");
+const { isServiceExists } = require("./status");
 
 function getOldBackendName() {
   let OLD_BACKEND_NAME;
@@ -92,18 +94,21 @@ function getOldBootstrapperName() {
 //   return;
 // }
 
-function uninstall() {
+async function uninstall() {
   try {
-    try {
-      execSync(`${gConfig.NSSM_PATH} status ${getOldServiceName()}`);
-    } catch (e) {
+    //恢复服务显示
+    if(!isServiceExists()){
       console.log(`服务未安装`);
-      sleep(3000);
+      await sleep(3000);
       return;
     }
-    execSync(`${gConfig.NSSM_PATH} remove ${getOldServiceName()} confirm`);
-    execSync(`${gConfig.NSSM_PATH} stop ${getOldServiceName()}`);
+    execSync(`sc.exe sdset ${SERVICE_NAME} "D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)S:(AU;FA;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;WD)"`);
+    execSync(`${SERVICE_EXE_PATH} -remove`);
     // fs.rmdirSync(`${INSTALL_PATH}`, { recursive: true });
+    try {
+      execSync(`${ExplorerUtil_PATH} /unload`);
+    } catch (error) {}
+    execSync(`taskkill /F /im ${BOOTSTRAPPER_NAME}`);
     let fileArr = fs.readdirSync(`${gConfig.INSTALL_PATH}`);
     try {
       for (const file of fileArr) {
@@ -113,18 +118,20 @@ function uninstall() {
       console.log("未完全清理");
     }
     console.log("卸载完毕");
-    sleep(1000);
+    await sleep(1000);
   } catch (e) {
     console.log("--------ERROR!!-------");
     console.log(e);
-    sleep(100000);
+    await sleep(100000);
   }
 }
 
 function sleep(msec) {
-  setTimeout(async function () {
-    await new Promise((r) => r);
-  }, msec);
+  return new Promise(r => {
+    setTimeout(() => {
+      r();
+    }, msec);
+  })
 }
 
 uninstall();

@@ -104,7 +104,10 @@ io.on("connection", (sk) => {
     // if (!fs.existsSync("tmpDir")) {
     //   fs.mkdirSync("tmpDir");
     // }
-    const to = fs.createWriteStream(`/Linux/var/www/tmpDir/${fileName}`);
+    if (!fs.existsSync("/var/www/tmpDir/tmpDir")) {
+      fs.mkdirSync("/var/www/tmpDir/tmpDir", {recursive: true});
+    }
+    const to = fs.createWriteStream(`/var/www/tmpDir/tmpDir/${fileName}`);
     to.on("finish", () => {
       sk.to("admin").emit("apidownloadfile", fileName);
     });
